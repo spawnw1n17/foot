@@ -1,0 +1,12 @@
+{
+  "name": "aurora-eleven",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modern browser football manager MVP",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "check": "node scripts/check.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "license": "MIT"
+}
