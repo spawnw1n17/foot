@@ -70,6 +70,12 @@ jobs:
             NGINX
             rm -f /etc/nginx/sites-enabled/default
             ln -sfn /etc/nginx/sites-available/foot /etc/nginx/sites-enabled/foot
+            if command -v ufw >/dev/null 2>&1; then
+              ufw allow 80/tcp || true
+            fi
             nginx -t
             systemctl enable nginx
             systemctl restart nginx
+
+      - name: Verify deployed site
+        run: curl --fail --retry 10 --retry-delay 3 --max-time 15 "http://${{ secrets.SERVER_HOST }}/"
