@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Aurora Eleven">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07120f"/>
+      <stop offset="1" stop-color="#123f2b"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8cffb3"/>
+      <stop offset="1" stop-color="#24db73"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M256 72 418 166v180L256 440 94 346V166Z" fill="none" stroke="url(#glow)" stroke-width="26"/>
+  <path d="m256 146 94 55v110l-94 55-94-55V201Z" fill="#0c241a" stroke="#52ee8b" stroke-width="14"/>
+  <path d="M204 326 256 183l52 143h-35l-9-29h-48l-9 29Zm22-63h28l-14-45Z" fill="#f5fff8"/>
+  <circle cx="384" cy="128" r="22" fill="#52ee8b" opacity=".9"/>
+</svg>
