@@ -1,0 +1,20 @@
+{
+  "name": "Aurora Eleven",
+  "short_name": "A11",
+  "description": "Современный браузерный футбольный менеджер.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07120f",
+  "theme_color": "#07120f",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
