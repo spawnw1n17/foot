@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07130e">
+  <meta name="description" content="Aurora Eleven — современный футбольный менеджер">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <title>Aurora Eleven</title>
+</head>
+<body>
+  <div class="glow glow-a"></div><div class="glow glow-b"></div>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="logo"><img src="icon.svg" alt=""><div><b>AURORA</b><span>ELEVEN</span></div></div>
+      <nav>
+        <button class="nav active" data-view="home">⌂ <span>Главная</span></button>
+        <button class="nav" data-view="squad">◉ <span>Состав</span></button>
+        <button class="nav" data-view="tactics">⌁ <span>Тактика</span></button>
+        <button class="nav" data-view="match">▶ <span>Матч</span></button>
+        <button class="nav" data-view="market">↔ <span>Трансферы</span></button>
+      </nav>
+      <div class="coach"><span>М</span><div><b>Главный тренер</b><small>Уровень 7</small></div></div>
+      <button class="reset" id="reset">Сбросить карьеру</button>
+    </aside>
+
+    <main>
+      <header>
+        <button class="burger" id="burger">☰</button>
+        <div class="club"><div class="crest">A</div><div><b>Аврора ФК</b><small>Премьер-дивизион · 2026/27</small></div></div>
+        <div class="resources"><div><small>Бюджет</small><b id="money">₽ 28,4 млн</b></div><div><small>Болельщики</small><b id="fans">42 680</b></div><div><small>Рейтинг</small><b id="rating">1 284</b></div></div>
+        <button class="primary jump" data-view="match">Играть матч</button>
+      </header>
+
+      <section class="view active" id="home">
+        <article class="hero">
+          <div><span class="eyebrow">СЛЕДУЮЩИЙ МАТЧ · ЧЕРЕЗ 2 ДНЯ</span><h1>Время подняться<br><em>на вершину.</em></h1><p>Соберите лучший состав, настройте тактику и приведите «Аврору» к чемпионству.</p><div class="actions"><button class="primary jump" data-view="tactics">Подготовить тактику</button><button class="ghost jump" data-view="squad">Проверить состав</button></div></div>
+          <div class="next-match"><div class="teams"><div><span class="team-mark green">A</span><b>Аврора</b></div><strong>VS</strong><div><span class="team-mark blue">V</span><b>Вектор</b></div></div><small>Домашний стадион · 19:30</small></div>
+        </article>
+        <div class="stats-grid"><article><small>Сила состава</small><b id="power">80</b><span>из 100</span></article><article><small>Форма</small><b>4–1–0</b><span>последние 5 матчей</span></article><article><small>Место в лиге</small><b>4</b><span>31 очко</span></article><article><small>Мораль</small><b>Высокая</b><span>команда уверена</span></article></div>
+        <div class="dashboard-grid"><article class="panel"><div class="panel-head"><div><span class="eyebrow">ПРЕМЬЕР-ДИВИЗИОН</span><h2>Турнирная таблица</h2></div><span>17 тур</span></div><div id="table"></div></article><article class="panel"><div class="panel-head"><div><span class="eyebrow">КЛУБ</span><h2>Последние события</h2></div></div><div id="activity"></div></article></div>
+      </section>
+
+      <section class="view" id="squad">
+        <div class="title"><div><span class="eyebrow">КОМАНДА</span><h1>Состав клуба</h1><p>Управляйте формой, энергией и развитием футболистов.</p></div><div class="actions"><button class="ghost" id="auto">Автосостав</button><button class="primary" id="train">Провести тренировку</button></div></div>
+        <div class="toolbar"><input id="search" placeholder="Поиск игрока"><div id="filters"><button class="active" data-pos="ALL">Все</button><button data-pos="GK">Вратари</button><button data-pos="DEF">Защита</button><button data-pos="MID">Полузащита</button><button data-pos="FWD">Атака</button></div></div>
+        <div class="panel player-table"><div class="player-row header-row"><span>Игрок</span><span>Поз.</span><span>Рейтинг</span><span>Энергия</span><span>Возраст</span><span>Стоимость</span></div><div id="players"></div></div>
+      </section>
+
+      <section class="view" id="tactics">
+        <div class="title"><div><span class="eyebrow">ПОДГОТОВКА</span><h1>Тактический штаб</h1><p>Настройте модель игры перед следующим матчем.</p></div><button class="primary" id="saveTactics">Сохранить тактику</button></div>
+        <div class="tactics-grid"><article class="panel pitch-card"><div class="panel-head"><h2>Расстановка</h2><select id="formation"><option>4-3-3</option><option>4-2-3-1</option><option>3-5-2</option></select></div><div class="pitch" id="pitch"><div class="midline"></div><div class="circle"></div></div></article><article class="panel controls"><div class="readiness"><small>Тактическая готовность</small><b id="readiness">84</b><div><i id="readyBar"></i></div></div><label>Ментальность <b id="mentalityText">Сбалансированно</b><input id="mentality" type="range" min="0" max="100" value="52"></label><label>Прессинг <b id="pressingText">Средний</b><input id="pressing" type="range" min="0" max="100" value="62"></label><label>Темп <b id="tempoText">Быстрый</b><input id="tempo" type="range" min="0" max="100" value="68"></label><div class="instructions"><button class="active" data-inst="short">Короткий пас</button><button data-inst="direct">Вертикальный футбол</button><button class="active" data-inst="wide">Игра через фланги</button><button data-inst="offside">Офсайдная ловушка</button></div></article></div>
+      </section>
+
+      <section class="view" id="match">
+        <div class="title match-title"><div><span class="live"><i></i> МАТЧ-ЦЕНТР</span><h1>Аврора <em id="score">0 : 0</em> Вектор</h1><p id="status">Матч ещё не начался</p></div><div class="actions"><button class="ghost" id="pause" disabled>Пауза</button><button class="primary" id="start">Начать матч</button></div></div>
+        <div class="match-grid"><article class="stadium"><div class="scoreboard"><b>АВР <strong id="homeScore">0</strong></b><time id="clock">00:00</time><b><strong id="awayScore">0</strong> ВЕК</b></div><canvas id="canvas" width="960" height="560"></canvas><div class="match-actions"><button id="speed">Скорость ×1</button><button id="skip">Завершить быстро</button></div></article><aside><article class="panel"><h2>Статистика</h2><div class="match-stat"><span>Владение</span><b id="possession">50% — 50%</b></div><div class="match-stat"><span>Удары</span><b id="shots">0 — 0</b></div><div class="match-stat"><span>В створ</span><b id="target">0 — 0</b></div></article><article class="panel commentary"><h2>Хроника</h2><div id="commentary"><p>Здесь появятся ключевые события.</p></div></article></aside></div>
+      </section>
+
+      <section class="view" id="market">
+        <div class="title"><div><span class="eyebrow">СКАУТИНГ</span><h1>Трансферный рынок</h1><p>Находите таланты и усиливайте слабые позиции.</p></div><button class="ghost" id="refresh">Обновить рынок · ₽250 тыс.</button></div>
+        <article class="market-banner"><div><span>СКАУТСКАЯ СЕТЬ</span><h2>Найдены игроки с высоким потенциалом</h2><p>Свежая подборка доступных футболистов.</p></div><strong>87%<small>точность отчёта</small></strong></article>
+        <div class="market-grid" id="marketGrid"></div>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
