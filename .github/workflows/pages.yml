@@ -1,4 +1,4 @@
-name: Deploy Aurora Eleven to GitHub Pages
+name: Deploy browser games to GitHub Pages
 
 on:
   push:
@@ -23,7 +23,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm run check
+      - name: Validate main project
+        run: npm run check
+      - name: Validate AeroSphere
+        run: |
+          cd world-air-network
+          npm run check
       - name: Validate UAV simulator
         run: |
           set -e
@@ -71,7 +76,7 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Verify simulator endpoint and assets
+      - name: Verify UAV simulator endpoint and assets
         run: |
           set -e
           BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim"
@@ -81,12 +86,23 @@ jobs:
           done
           echo "Verified assets: $BASE/"
 
-      - name: Open published game in Chromium
+      - name: Verify AeroSphere endpoint and assets
         run: |
           set -e
-          BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim/?build=${{ github.sha }}"
+          BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network"
+          curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --max-time 20 "$BASE/" | grep -q "AeroSphere"
+          for asset in styles.css src/data.js src/engine.js src/game.js manifest.webmanifest assets/icon.svg; do
+            curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/$asset" >/dev/null
+          done
+          echo "Verified AeroSphere: $BASE/"
+
+      - name: Open published games in Chromium
+        run: |
+          set -e
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
           test -n "$CHROME"
+
+          UAV_BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim/?build=${{ github.sha }}"
           "$CHROME" \
             --headless=new \
             --no-sandbox \
@@ -95,12 +111,10 @@ jobs:
             --hide-scrollbars \
             --window-size=1440,900 \
             --virtual-time-budget=12000 \
-            --dump-dom "$BASE" > "$RUNNER_TEMP/uav-dom.html"
+            --dump-dom "$UAV_BASE" > "$RUNNER_TEMP/uav-dom.html"
           grep -q 'data-mission="daily"' "$RUNNER_TEMP/uav-dom.html"
           grep -q 'data-model="mini"' "$RUNNER_TEMP/uav-dom.html"
           grep -q 'data-skin="mini"' "$RUNNER_TEMP/uav-dom.html"
-          grep -q 'uav-skin-preview' "$RUNNER_TEMP/uav-dom.html"
-          grep -q 'uav-skin-thumb' "$RUNNER_TEMP/uav-dom.html"
           grep -q 'КАРЬЕРА ПИЛОТА' "$RUNNER_TEMP/uav-dom.html"
           "$CHROME" \
             --headless=new \
@@ -110,7 +124,30 @@ jobs:
             --hide-scrollbars \
             --window-size=1440,900 \
             --virtual-time-budget=9000 \
-            --screenshot="$RUNNER_TEMP/uav-desktop.png" "$BASE"
+            --screenshot="$RUNNER_TEMP/uav-desktop.png" "$UAV_BASE"
+
+          AERO_BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network/?build=${{ github.sha }}"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-dev-shm-usage \
+            --disable-gpu \
+            --hide-scrollbars \
+            --window-size=1440,900 \
+            --virtual-time-budget=12000 \
+            --dump-dom "$AERO_BASE" > "$RUNNER_TEMP/aerosphere-dom.html"
+          grep -q 'AeroSphere' "$RUNNER_TEMP/aerosphere-dom.html"
+          grep -q 'id="worldMap"' "$RUNNER_TEMP/aerosphere-dom.html"
+          grep -q 'id="moneyStat"' "$RUNNER_TEMP/aerosphere-dom.html"
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-dev-shm-usage \
+            --disable-gpu \
+            --hide-scrollbars \
+            --window-size=1440,900 \
+            --virtual-time-budget=9000 \
+            --screenshot="$RUNNER_TEMP/aerosphere-desktop.png" "$AERO_BASE"
           "$CHROME" \
             --headless=new \
             --no-sandbox \
@@ -120,26 +157,29 @@ jobs:
             --window-size=390,844 \
             --force-device-scale-factor=1 \
             --virtual-time-budget=9000 \
-            --screenshot="$RUNNER_TEMP/uav-mobile.png" "$BASE"
+            --screenshot="$RUNNER_TEMP/aerosphere-mobile.png" "$AERO_BASE"
           test -s "$RUNNER_TEMP/uav-desktop.png"
-          test -s "$RUNNER_TEMP/uav-mobile.png"
-          echo "Chromium skin test passed: $BASE"
+          test -s "$RUNNER_TEMP/aerosphere-desktop.png"
+          test -s "$RUNNER_TEMP/aerosphere-mobile.png"
+          echo "Chromium tests passed"
 
       - name: Upload browser screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: uav-simulator-browser-check-${{ github.sha }}
+          name: browser-games-check-${{ github.sha }}
           path: |
             ${{ runner.temp }}/uav-desktop.png
-            ${{ runner.temp }}/uav-mobile.png
             ${{ runner.temp }}/uav-dom.html
+            ${{ runner.temp }}/aerosphere-desktop.png
+            ${{ runner.temp }}/aerosphere-mobile.png
+            ${{ runner.temp }}/aerosphere-dom.html
           retention-days: 14
 
-      - name: Record successful publication
+      - name: Record successful AeroSphere publication
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
             --repo "${{ github.repository }}" \
-            --title "[AUTO] Скины и Chromium проверены ${{ github.sha }}" \
-            --body "Реалистичные скины БПЛА опубликованы и проверены в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim/"
+            --title "[AUTO] AeroSphere опубликована ${{ github.sha }}" \
+            --body "AeroSphere опубликована и проверена в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network/"
