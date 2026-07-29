@@ -56,6 +56,8 @@ async function runDesktopScenario() {
   await openButton.click();
   await page.waitForFunction(() => document.querySelector('[data-city-id="minsk"]')?.classList.contains('open'));
 
+  await page.locator('[data-zoom="fit"]').click();
+  assert.equal(Number(await page.locator('#worldMap').getAttribute('data-zoom')), 1, 'Полный вид должен сбрасывать масштаб');
   await page.locator('#cityLayer [data-city-id="moscow"]').click();
   await page.locator('[data-action="start-route"][data-city-id="moscow"]').click();
   await page.locator('#cityLayer [data-city-id="minsk"]').click();
