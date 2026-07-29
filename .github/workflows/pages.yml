@@ -33,16 +33,21 @@ jobs:
             uav-sim/map.js \
             uav-sim/flight.js \
             uav-sim/controls.js \
+            uav-sim/skins.js \
             uav-sim/sw.js; do
             node --check "$file"
           done
           test -s uav-sim/index.html
           test -s uav-sim/styles.css
+          test -s uav-sim/skins.css
+          test -s uav-sim/assets/uav-skins.svg
           test -s uav-sim/manifest.webmanifest
           test -s uav-sim/icon.svg
           grep -q "Аврора Полёт" uav-sim/index.html
           grep -q "MISSION_CATALOG" uav-sim/data.js
           grep -q "serviceWorker" uav-sim/controls.js
+          grep -q "installUavSkins" uav-sim/controls.js
+          grep -q "uav-skin-preview" uav-sim/skins.js
 
   deploy:
     needs: validate
@@ -71,7 +76,7 @@ jobs:
           set -e
           BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim"
           curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --max-time 20 "$BASE/" | grep -q "Аврора Полёт"
-          for asset in styles.css data.js app.js map.js flight.js controls.js manifest.webmanifest icon.svg; do
+          for asset in styles.css skins.css data.js app.js map.js flight.js controls.js skins.js assets/uav-skins.svg manifest.webmanifest icon.svg; do
             curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/$asset" >/dev/null
           done
           echo "Verified assets: $BASE/"
@@ -89,10 +94,13 @@ jobs:
             --disable-gpu \
             --hide-scrollbars \
             --window-size=1440,900 \
-            --virtual-time-budget=10000 \
+            --virtual-time-budget=12000 \
             --dump-dom "$BASE" > "$RUNNER_TEMP/uav-dom.html"
           grep -q 'data-mission="daily"' "$RUNNER_TEMP/uav-dom.html"
           grep -q 'data-model="mini"' "$RUNNER_TEMP/uav-dom.html"
+          grep -q 'data-skin="mini"' "$RUNNER_TEMP/uav-dom.html"
+          grep -q 'uav-skin-preview' "$RUNNER_TEMP/uav-dom.html"
+          grep -q 'uav-skin-thumb' "$RUNNER_TEMP/uav-dom.html"
           grep -q 'КАРЬЕРА ПИЛОТА' "$RUNNER_TEMP/uav-dom.html"
           "$CHROME" \
             --headless=new \
@@ -101,7 +109,7 @@ jobs:
             --disable-gpu \
             --hide-scrollbars \
             --window-size=1440,900 \
-            --virtual-time-budget=7000 \
+            --virtual-time-budget=9000 \
             --screenshot="$RUNNER_TEMP/uav-desktop.png" "$BASE"
           "$CHROME" \
             --headless=new \
@@ -111,11 +119,11 @@ jobs:
             --hide-scrollbars \
             --window-size=390,844 \
             --force-device-scale-factor=1 \
-            --virtual-time-budget=7000 \
+            --virtual-time-budget=9000 \
             --screenshot="$RUNNER_TEMP/uav-mobile.png" "$BASE"
           test -s "$RUNNER_TEMP/uav-desktop.png"
           test -s "$RUNNER_TEMP/uav-mobile.png"
-          echo "Chromium browser smoke test passed: $BASE"
+          echo "Chromium skin test passed: $BASE"
 
       - name: Upload browser screenshots
         uses: actions/upload-artifact@v4
@@ -133,5 +141,5 @@ jobs:
         run: |
           gh issue create \
             --repo "${{ github.repository }}" \
-            --title "[AUTO] Публикация и Chromium проверены ${{ github.sha }}" \
-            --body "GitHub Pages и браузерная проверка Chromium успешно завершены: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim/"
+            --title "[AUTO] Скины и Chromium проверены ${{ github.sha }}" \
+            --body "Реалистичные скины БПЛА опубликованы и проверены в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim/"
