@@ -4,7 +4,7 @@
 .uav-skin-thumb{
   --skin-x:0%;
   --skin-y:0%;
-  background-image:url("./assets/uav-skins.png")!important;
+  background-image:url("./assets/uav-skins.svg")!important;
   background-repeat:no-repeat!important;
   background-size:400% 400%!important;
   background-position:var(--skin-x) var(--skin-y)!important;
