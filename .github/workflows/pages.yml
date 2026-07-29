@@ -24,12 +24,25 @@ jobs:
         with:
           node-version: 22
       - run: npm run check
-      - name: Validate UAV simulator modules
+      - name: Validate UAV simulator
         run: |
-          node --check uav-sim/app.js
-          node --check uav-sim/map.js
-          node --check uav-sim/flight.js
-          node --check uav-sim/controls.js
+          set -e
+          for file in \
+            uav-sim/data.js \
+            uav-sim/app.js \
+            uav-sim/map.js \
+            uav-sim/flight.js \
+            uav-sim/controls.js \
+            uav-sim/sw.js; do
+            node --check "$file"
+          done
+          test -s uav-sim/index.html
+          test -s uav-sim/styles.css
+          test -s uav-sim/manifest.webmanifest
+          test -s uav-sim/icon.svg
+          grep -q "Аврора Полёт" uav-sim/index.html
+          grep -q "MISSION_CATALOG" uav-sim/data.js
+          grep -q "serviceWorker" uav-sim/controls.js
 
   deploy:
     needs: validate
@@ -53,11 +66,15 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Verify simulator in browser endpoint
+      - name: Verify simulator endpoint and assets
         run: |
-          URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim/"
-          curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --max-time 20 "$URL" | grep -q "Аврора Полёт"
-          echo "Verified: $URL"
+          set -e
+          BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/uav-sim"
+          curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --max-time 20 "$BASE/" | grep -q "Аврора Полёт"
+          for asset in styles.css data.js app.js map.js flight.js controls.js manifest.webmanifest icon.svg; do
+            curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/$asset" >/dev/null
+          done
+          echo "Verified: $BASE/"
       - name: Record successful publication
         env:
           GH_TOKEN: ${{ github.token }}
