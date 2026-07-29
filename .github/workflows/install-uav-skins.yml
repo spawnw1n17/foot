@@ -44,7 +44,7 @@ jobs:
           if "'skins.css'" not in text:
               text = text.replace(
                   "'controls.js','manifest.webmanifest'",
-                  "'controls.js','skins.js','skins.css','assets/uav-skins.png','manifest.webmanifest'"
+                  "'controls.js','skins.js','skins.css','assets/uav-skins.svg','manifest.webmanifest'"
               )
           sw.write_text(text, encoding='utf-8')
 
@@ -58,11 +58,11 @@ jobs:
           if 'test -s uav-sim/skins.css' not in text:
               text = text.replace(
                   '          test -s uav-sim/styles.css',
-                  '          test -s uav-sim/styles.css\n          test -s uav-sim/skins.css\n          test -s uav-sim/assets/uav-skins.png'
+                  '          test -s uav-sim/styles.css\n          test -s uav-sim/skins.css\n          test -s uav-sim/assets/uav-skins.svg'
               )
           text = text.replace(
               'for asset in styles.css data.js app.js map.js flight.js controls.js manifest.webmanifest icon.svg; do',
-              'for asset in styles.css skins.css data.js app.js map.js flight.js controls.js skins.js assets/uav-skins.png manifest.webmanifest icon.svg; do'
+              'for asset in styles.css skins.css data.js app.js map.js flight.js controls.js skins.js assets/uav-skins.svg manifest.webmanifest icon.svg; do'
           )
           if "grep -q 'data-skin=\"mini\"'" not in text:
               text = text.replace(
@@ -84,9 +84,9 @@ jobs:
           set -e
           grep -q 'skins.css' uav-sim/index.html
           grep -q 'skins.js' uav-sim/index.html
-          grep -q 'uav-skins.png' uav-sim/sw.js
+          grep -q 'uav-skins.svg' uav-sim/sw.js
           node --check uav-sim/skins.js
-          test -s uav-sim/assets/uav-skins.png
+          test -s uav-sim/assets/uav-skins.svg
 
       - name: Commit integration
         run: |
