@@ -7,6 +7,7 @@ const outputDir = process.env.QA_OUTPUT_DIR || 'artifacts/aerosphere-qa';
 await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
+let activePage = null;
 const report = {
   baseUrl,
   startedAt: new Date().toISOString(),
@@ -26,6 +27,10 @@ try {
 } catch (error) {
   report.ok = false;
   report.failure = error?.stack || String(error);
+  if (activePage && !activePage.isClosed()) {
+    await activePage.screenshot({ path: `${outputDir}/failure.png`, fullPage: true }).catch(() => {});
+    await writeFile(`${outputDir}/failure.html`, await activePage.content()).catch(() => {});
+  }
   throw error;
 } finally {
   report.finishedAt = new Date().toISOString();
@@ -36,16 +41,26 @@ try {
 async function runDesktopScenario() {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
+  activePage = page;
   attachDiagnostics(page, 'desktop');
   await page.addInitScript(() => localStorage.clear());
 
   await page.goto(`${baseUrl}?qa=desktop`, { waitUntil: 'networkidle', timeout: 60000 });
-  await page.waitForFunction(() => document.documentElement.dataset.cityCount === '40');
+  await page.waitForFunction(() => document.querySelectorAll('#cityLayer [data-city-id]').length === 40);
   await page.waitForSelector('#sideContent .panel-title');
 
-  assert.equal(await page.locator('#cityLayer [data-city-id]').count(), 40, 'На карте должны отображаться 40 городов');
-  assert.equal(await page.locator('#routeLayer [data-route-id]').count(), 2, 'Новая игра должна начинаться с двух маршрутов');
-  assert.equal(await page.locator('html').getAttribute('data-runtime-errors'), null, 'Не должно быть ошибок рантайма');
+  const startup = await page.evaluate(() => ({
+    cityCount: document.querySelectorAll('#cityLayer [data-city-id]').length,
+    routeCount: document.querySelectorAll('#routeLayer [data-route-id]').length,
+    searchReady: Boolean(document.querySelector('#citySearch')),
+    qaReady: Boolean(window.__AEROSPHERE_QA__),
+    runtimeErrors: document.documentElement.dataset.runtimeErrors || null
+  }));
+  assert.equal(startup.cityCount, 40, 'На карте должны отображаться 40 городов');
+  assert.equal(startup.routeCount, 2, 'Новая игра должна начинаться с двух маршрутов');
+  assert.equal(startup.searchReady, true, 'Поиск города должен быть подключён');
+  assert.equal(startup.qaReady, true, 'QA-телеметрия должна быть подключена');
+  assert.equal(startup.runtimeErrors, null, 'Не должно быть ошибок рантайма');
 
   const search = page.locator('#citySearch');
   await search.fill('Минск');
@@ -105,17 +120,19 @@ async function runDesktopScenario() {
     savedRoutes: saved.routes.length
   };
 
+  activePage = null;
   await context.close();
 }
 
 async function runMobileScenario() {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const page = await context.newPage();
+  activePage = page;
   attachDiagnostics(page, 'mobile');
   await page.addInitScript(() => localStorage.clear());
 
   await page.goto(`${baseUrl}?qa=mobile`, { waitUntil: 'networkidle', timeout: 60000 });
-  await page.waitForFunction(() => document.documentElement.dataset.cityCount === '40');
+  await page.waitForFunction(() => document.querySelectorAll('#cityLayer [data-city-id]').length === 40);
 
   const layout = await page.evaluate(() => ({
     innerWidth: window.innerWidth,
@@ -143,6 +160,7 @@ async function runMobileScenario() {
   await page.screenshot({ path: `${outputDir}/mobile-final.png`, fullPage: true });
   report.mobile = layout;
 
+  activePage = null;
   await context.close();
 }
 
