@@ -56,8 +56,18 @@ function bindJoysticks(){
   })
 }
 
+function installUavSkins(){
+  if(!document.querySelector('link[data-uav-skins]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='skins.css';link.dataset.uavSkins='1';document.head.appendChild(link)
+  }
+  if(!document.querySelector('script[data-uav-skins]')){
+    const script=document.createElement('script');script.src='skins.js';script.async=true;script.dataset.uavSkins='1';document.head.appendChild(script)
+  }
+  const preload=new Image();preload.src='assets/uav-skins.svg'
+}
+
 async function init(){
-  initUi();bindControls();resizeCanvas();resetFlight(false);updateOfflineBadge();
+  installUavSkins();initUi();bindControls();resizeCanvas();resetFlight(false);updateOfflineBadge();
   if('serviceWorker' in navigator){try{await navigator.serviceWorker.register('sw.js')}catch{}}
   setTimeout(()=>{$('#bootText').textContent='Карта и системы готовы'},350);setTimeout(()=>$('#boot').classList.add('hidden'),900);
   let helped=false;try{helped=localStorage.getItem('aurora-uav-help-v4')}catch{}if(!helped)setTimeout(()=>{$('#helpDialog').showModal();try{localStorage.setItem('aurora-uav-help-v4','1')}catch{}},1200);
