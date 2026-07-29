@@ -1,1 +1,176 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07110f"><title>Аврора Полёт — симулятор БПЛА</title><link rel="stylesheet" href="styles.css"></head><body><header class="glass"><div class="brand" id="menu"><span class="logo">A</span><span>АВРОРА<small>ПОЛЁТ</small></span></div><div class="state" id="state">ГОТОВ К ЗАПУСКУ</div><button class="headbtn" id="sound">🔊</button><button class="headbtn" id="full">На весь экран</button></header><main class="layout"><aside class="panel glass" id="panel"><div class="label">АНГАР</div><h1>Выбор аппарата</h1><div class="tabs" id="tabs"><button class="on" data-c="all">Все</button><button data-c="civil">Гражданские</button><button data-c="mil">ВС РФ</button></div><label>Модель<select id="model"></select></label><div class="card" id="modelCard"></div><div class="card"><div class="label">УЧЕБНЫЙ МАРШРУТ</div><div class="mission"><span>Контрольные точки</span><b id="gates">0 / 3</b></div><div class="progress"><i id="prog"></i></div><p class="note" id="mission">Пройдите три кольца и вернитесь к месту старта.</p></div><div class="card"><div class="label">ПОДГОТОВКА</div><div class="grid2"><label>Погода<select id="weather"><option value="calm">Штиль</option><option value="breeze">Лёгкий ветер</option><option value="windy">Порывистый ветер</option><option value="fog">Туман</option></select></label><label>Время<select id="time"><option value="day">День</option><option value="night">Ночь</option></select></label></div><button class="wide" id="homeBtn">Указать старт на карте</button><button class="wide primary" id="launch">Запустить аппарат</button></div><p class="note">Игровая симуляция: параметры условные, вооружение, наведение и боевые задачи отсутствуют.</p></aside><section class="world"><div class="map" id="map"><div class="tiles" id="tiles"></div><canvas id="canvas"></canvas><div class="drone" id="drone"></div><div class="credit">© OpenStreetMap contributors</div></div><div class="tele glass"><div><small>ВЫСОТА</small><b><span id="alt">0</span> м</b></div><div><small>СКОРОСТЬ</small><b><span id="speed">0</span> км/ч</b></div><div><small>ДАЛЬНОСТЬ</small><b id="dist">0 м</b></div><div><small>КУРС</small><b><span id="head">000</span>°</b></div><div><small>ЭНЕРГИЯ</small><b id="bat">100%</b></div></div><div class="actions glass"><span>ЭНЕРГИЯ <b id="bat2">100%</b></span><div class="battery"><i id="batbar" style="width:100%"></i></div><button id="follow">◎ Слежение</button><button id="rth">⌂ Возврат домой</button><button id="land" class="danger">↓ Посадка</button></div><div class="obj glass" id="obj"><span>1</span><div><small>ТЕКУЩАЯ ЗАДАЧА</small><b>Укажите место старта</b></div></div><div class="toast" id="toast"></div><div class="touch"><div class="lr"><button data-k="l">◀</button><button data-k="r">▶</button></div><div><button data-k="u">▲</button><button data-k="d">▼</button></div><div><button data-k="p">＋</button><button data-k="m">−</button></div></div></section></main><dialog id="result"><form method="dialog" class="result glass"><div class="label">ПОЛЁТ ЗАВЕРШЁН</div><h2 id="resultTitle">Посадка выполнена</h2><p class="note" id="resultText"></p><div class="stats"><div><small>Очки</small><b id="score">0</b></div><div><small>Время</small><b id="flightTime">00:00</b></div><div><small>Дистанция</small><b id="total">0 м</b></div></div><button class="wide primary" id="again">Новый полёт</button></form></dialog><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07110f">
+  <meta name="description" content="Аврора Полёт — русскоязычный браузерный симулятор гражданских и условных игровых профилей БПЛА">
+  <title>Аврора Полёт — симулятор БПЛА</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="boot" id="boot" aria-live="polite">
+    <div class="boot-mark">A</div>
+    <div><b>АВРОРА ПОЛЁТ</b><span>Подготовка тренажёра…</span></div>
+  </div>
+
+  <header class="topbar glass">
+    <button class="brand" id="menuBtn" aria-label="Открыть ангар">
+      <span class="brand-mark">A</span>
+      <span><b>АВРОРА</b><small>ПОЛЁТ</small></span>
+    </button>
+    <div class="flight-state" id="flightState"><i></i><span>ГОТОВ К ПОДГОТОВКЕ</span></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="helpBtn" title="Управление">?</button>
+      <button class="icon-btn" id="soundBtn" title="Звук">🔊</button>
+      <button class="text-btn" id="fullscreenBtn">На весь экран</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <aside class="hangar glass" id="hangar" aria-label="Ангар и настройки">
+      <div class="hangar-head">
+        <div><span class="eyebrow">АНГАР</span><h1>Выбор аппарата</h1></div>
+        <button class="icon-btn close-panel" id="closeHangar" aria-label="Закрыть ангар">×</button>
+      </div>
+
+      <div class="segmented" id="categoryTabs">
+        <button class="active" data-category="all">Все</button>
+        <button data-category="civil">Гражданские</button>
+        <button data-category="mil">ВС РФ</button>
+      </div>
+
+      <label class="field">Модель
+        <select id="modelSelect"></select>
+      </label>
+
+      <article class="model-card" id="modelCard"></article>
+
+      <article class="panel-card mission-card">
+        <div class="card-title"><span class="eyebrow">УЧЕБНАЯ МИССИЯ</span><b id="missionTitle">Маршрутная подготовка</b></div>
+        <div class="mission-row"><span>Контрольные точки</span><strong id="gateCounter">0 / 3</strong></div>
+        <div class="progress"><i id="missionProgress"></i></div>
+        <p id="missionDescription">Пройдите три контрольных кольца, вернитесь к месту старта и выполните мягкую посадку.</p>
+      </article>
+
+      <article class="panel-card setup-card">
+        <span class="eyebrow">УСЛОВИЯ ПОЛЁТА</span>
+        <div class="two-fields">
+          <label class="field">Погода
+            <select id="weatherSelect">
+              <option value="calm">Штиль</option>
+              <option value="breeze">Лёгкий ветер</option>
+              <option value="windy">Порывистый ветер</option>
+              <option value="fog">Туман</option>
+            </select>
+          </label>
+          <label class="field">Время
+            <select id="timeSelect">
+              <option value="day">День</option>
+              <option value="sunset">Сумерки</option>
+              <option value="night">Ночь</option>
+            </select>
+          </label>
+        </div>
+        <button class="secondary wide" id="chooseHomeBtn">Указать старт на карте</button>
+        <button class="primary wide" id="launchBtn">Запустить аппарат</button>
+      </article>
+
+      <p class="safety-note">Игровая симуляция с условными характеристиками. Вооружение, наведение, поражение целей и боевые задания отсутствуют.</p>
+    </aside>
+
+    <section class="world" id="world">
+      <div class="map" id="map" aria-label="Карта полёта">
+        <div class="tile-layer" id="tileLayer"></div>
+        <canvas id="routeCanvas"></canvas>
+        <div class="landing-zone" id="landingZone"><span>H</span></div>
+        <div class="aircraft" id="aircraft" aria-label="БПЛА"></div>
+        <div class="weather-overlay" id="weatherOverlay"></div>
+        <div class="map-attribution">© OpenStreetMap contributors</div>
+      </div>
+
+      <div class="telemetry glass" aria-label="Телеметрия">
+        <div><small>ВЫСОТА</small><b><span id="altitudeValue">0</span><em>м</em></b></div>
+        <div><small>СКОРОСТЬ</small><b><span id="speedValue">0</span><em>км/ч</em></b></div>
+        <div><small>ДАЛЬНОСТЬ</small><b id="distanceValue">0 м</b></div>
+        <div><small>КУРС</small><b><span id="headingValue">000</span><em>°</em></b></div>
+        <div><small>ЭНЕРГИЯ</small><b id="batteryValue">100%</b></div>
+      </div>
+
+      <div class="map-controls glass">
+        <button id="zoomInBtn" title="Приблизить">+</button>
+        <button id="zoomOutBtn" title="Отдалить">−</button>
+        <button id="centerBtn" title="К месту старта">⌂</button>
+      </div>
+
+      <div class="flight-actions glass">
+        <div class="battery-line"><span>Энергия</span><b id="batteryCompact">100%</b></div>
+        <div class="battery-track"><i id="batteryBar"></i></div>
+        <button id="followBtn">◎ Слежение: вкл.</button>
+        <button id="pauseBtn">Ⅱ Пауза</button>
+        <button id="returnBtn">⌂ Возврат домой</button>
+        <button id="landBtn" class="danger">↓ Посадка</button>
+      </div>
+
+      <div class="objective glass" id="objectivePanel">
+        <span id="objectiveIndex">1</span>
+        <div><small>ТЕКУЩАЯ ЗАДАЧА</small><b id="objectiveText">Укажите место старта</b></div>
+      </div>
+
+      <div class="status-toast" id="toast" role="status"></div>
+
+      <div class="touch-controls" id="touchControls" aria-label="Сенсорное управление">
+        <div class="touch-cluster steering">
+          <button data-control="left">↶</button>
+          <button data-control="right">↷</button>
+        </div>
+        <div class="touch-cluster altitude-control">
+          <button data-control="up">↑</button>
+          <button data-control="down">↓</button>
+        </div>
+        <div class="touch-cluster throttle-control">
+          <button data-control="more">＋</button>
+          <button data-control="less">−</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="helpDialog">
+    <form method="dialog" class="dialog-card glass">
+      <button class="dialog-close" aria-label="Закрыть">×</button>
+      <span class="eyebrow">УПРАВЛЕНИЕ</span>
+      <h2>Пульт пилота</h2>
+      <div class="key-grid">
+        <div><kbd>A</kbd><kbd>D</kbd><span>поворот</span></div>
+        <div><kbd>↑</kbd><kbd>↓</kbd><span>высота</span></div>
+        <div><kbd>W</kbd><kbd>S</kbd><span>тяга</span></div>
+        <div><kbd>R</kbd><span>возврат домой</span></div>
+        <div><kbd>L</kbd><span>посадка</span></div>
+        <div><kbd>Space</kbd><span>запуск</span></div>
+        <div><kbd>P</kbd><span>пауза</span></div>
+      </div>
+      <p>Для самолётных аппаратов сохраняйте скорость. Для мультикоптеров доступно зависание.</p>
+      <button class="primary wide">Понятно</button>
+    </form>
+  </dialog>
+
+  <dialog id="resultDialog">
+    <form method="dialog" class="dialog-card result-card glass">
+      <span class="eyebrow">ПОЛЁТ ЗАВЕРШЁН</span>
+      <div class="result-badge" id="resultBadge">A</div>
+      <h2 id="resultTitle">Посадка выполнена</h2>
+      <p id="resultDescription">Учебная миссия завершена.</p>
+      <div class="result-stats">
+        <div><small>ОЧКИ</small><b id="scoreValue">0</b></div>
+        <div><small>ВРЕМЯ</small><b id="timeValue">00:00</b></div>
+        <div><small>ДИСТАНЦИЯ</small><b id="totalDistanceValue">0 м</b></div>
+        <div><small>ТОЧНОСТЬ</small><b id="accuracyValue">0%</b></div>
+      </div>
+      <button class="primary wide" id="newFlightBtn">Новый полёт</button>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
