@@ -1,0 +1,83 @@
+/* Реалистичные игровые скины БПЛА — прозрачный спрайт-лист 4×4. */
+.uav-skin,
+.uav-skin-preview,
+.uav-skin-thumb{
+  --skin-x:0%;
+  --skin-y:0%;
+  background-image:url("./assets/uav-skins.png")!important;
+  background-repeat:no-repeat!important;
+  background-size:400% 400%!important;
+  background-position:var(--skin-x) var(--skin-y)!important;
+}
+
+[data-skin="mini"]{--skin-x:0%;--skin-y:0%}
+[data-skin="camera"]{--skin-x:33.333%;--skin-y:0%}
+[data-skin="hex"]{--skin-x:66.667%;--skin-y:0%}
+[data-skin="fpv"]{--skin-x:100%;--skin-y:0%}
+[data-skin="wing"]{--skin-x:0%;--skin-y:33.333%}
+[data-skin="vtol"]{--skin-x:33.333%;--skin-y:33.333%}
+[data-skin="rescue"]{--skin-x:66.667%;--skin-y:33.333%}
+[data-skin="agro"]{--skin-x:100%;--skin-y:33.333%}
+[data-skin="orlan"]{--skin-x:0%;--skin-y:66.667%}
+[data-skin="eleron"]{--skin-x:33.333%;--skin-y:66.667%}
+[data-skin="zala"]{--skin-x:66.667%;--skin-y:66.667%}
+[data-skin="supercam"]{--skin-x:100%;--skin-y:66.667%}
+[data-skin="forpost"]{--skin-x:0%;--skin-y:100%}
+[data-skin="inohodets"]{--skin-x:33.333%;--skin-y:100%}
+[data-skin="sirius"]{--skin-x:66.667%;--skin-y:100%}
+[data-skin="altius"]{--skin-x:100%;--skin-y:100%}
+
+.aircraft.uav-skin{
+  width:88px!important;
+  height:88px!important;
+  background-color:transparent!important;
+  clip-path:none!important;
+  border:0!important;
+  filter:drop-shadow(0 7px 6px rgba(0,0,0,.52)) drop-shadow(0 0 10px rgba(75,242,165,.22))!important;
+  image-rendering:auto;
+  transition:filter .2s,transform .12s linear!important;
+}
+.aircraft.uav-skin.fixed-wing{clip-path:none!important}
+.aircraft.uav-skin i{display:none!important}
+.aircraft.uav-skin.low-battery{
+  background-color:transparent!important;
+  filter:drop-shadow(0 7px 6px rgba(0,0,0,.52)) drop-shadow(0 0 15px rgba(255,111,134,.8))!important;
+}
+.world.camera-chase .aircraft.uav-skin{filter:drop-shadow(0 10px 8px rgba(0,0,0,.58)) drop-shadow(0 0 11px rgba(75,242,165,.2))!important}
+.world.camera-cinematic .aircraft.uav-skin{filter:drop-shadow(0 12px 9px rgba(0,0,0,.62)) drop-shadow(0 0 12px rgba(98,231,255,.18))!important}
+
+.model-icon.uav-skin-preview{
+  flex:0 0 auto;
+  width:78px!important;
+  height:68px!important;
+  border-radius:15px!important;
+  color:transparent!important;
+  font-size:0!important;
+  background-color:rgba(75,242,165,.045)!important;
+  border:1px solid rgba(75,242,165,.2)!important;
+  box-shadow:inset 0 0 24px rgba(0,0,0,.28),0 8px 20px rgba(0,0,0,.18);
+}
+
+.hangar-item{grid-template-columns:54px 1fr auto!important}
+.hangar-item>span.uav-skin-thumb{
+  width:52px!important;
+  height:44px!important;
+  border-radius:11px!important;
+  color:transparent!important;
+  font-size:0!important;
+  background-color:rgba(75,242,165,.035)!important;
+  border:1px solid rgba(164,255,221,.1);
+  box-shadow:inset 0 0 17px rgba(0,0,0,.25);
+}
+.hangar-item.active>span.uav-skin-thumb{
+  border-color:rgba(75,242,165,.32);
+  box-shadow:inset 0 0 17px rgba(0,0,0,.25),0 0 16px rgba(75,242,165,.08);
+}
+
+@media(max-width:860px){
+  .aircraft.uav-skin{width:78px!important;height:78px!important}
+}
+@media(max-width:560px){
+  .aircraft.uav-skin{width:70px!important;height:70px!important}
+  .model-icon.uav-skin-preview{width:70px!important;height:61px!important}
+}
