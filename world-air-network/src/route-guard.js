@@ -11,7 +11,7 @@ installTutorialCompletion();
 installPointerFocusCleanup();
 
 if (worldMap) {
-  worldMap.addEventListener('click', prioritizeCityAtRouteEndpoint, true);
+  worldMap.addEventListener('click', prioritizeCityAtMapPoint, true);
 }
 
 function installMapClarityStyles() {
@@ -72,9 +72,8 @@ function installPointerFocusCleanup() {
   }, true);
 }
 
-function prioritizeCityAtRouteEndpoint(event) {
+function prioritizeCityAtMapPoint(event) {
   if (event.target.closest?.('[data-city-id]')) return;
-  if (!event.target.closest?.('[data-route-id]')) return;
 
   const point = clientPointToSvg(event.clientX, event.clientY);
   if (!point) return;
