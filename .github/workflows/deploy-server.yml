@@ -18,11 +18,14 @@ jobs:
 
       - name: Validate JavaScript
         run: |
+          set -e
           node --check app.js
-          node --check uav-sim/app.js
-          node --check uav-sim/map.js
-          node --check uav-sim/flight.js
-          node --check uav-sim/controls.js
+          for file in uav-sim/data.js uav-sim/app.js uav-sim/map.js uav-sim/flight.js uav-sim/controls.js uav-sim/sw.js; do
+            node --check "$file"
+          done
+          test -s uav-sim/index.html
+          test -s uav-sim/styles.css
+          test -s uav-sim/manifest.webmanifest
 
       - name: Upload site files
         uses: appleboy/scp-action@v0.1.7
@@ -66,7 +69,7 @@ jobs:
                     try_files $uri $uri/ /index.html;
                 }
 
-                location ~* \.(?:css|js|svg|webmanifest)$ {
+                location ~* \.(?:css|js|svg|webmanifest|json)$ {
                     expires 1h;
                     add_header Cache-Control "public, max-age=3600";
                     try_files $uri =404;
@@ -84,5 +87,7 @@ jobs:
 
       - name: Verify deployed site
         run: |
-          curl --fail --retry 10 --retry-delay 3 --max-time 15 "http://${{ secrets.SERVER_HOST }}/"
-          curl --fail --retry 10 --retry-delay 3 --max-time 15 "http://${{ secrets.SERVER_HOST }}/uav-sim/"
+          BASE="http://${{ secrets.SERVER_HOST }}"
+          curl --fail --retry 10 --retry-delay 3 --max-time 15 "$BASE/"
+          curl --fail --retry 10 --retry-delay 3 --max-time 15 "$BASE/uav-sim/" | grep -q "Аврора Полёт"
+          curl --fail --retry 5 --retry-delay 2 --max-time 15 "$BASE/uav-sim/data.js" >/dev/null

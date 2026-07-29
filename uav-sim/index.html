@@ -2,91 +2,176 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#07110f">
   <meta name="description" content="Аврора Полёт — русскоязычный браузерный симулятор гражданских и условных игровых профилей БПЛА">
-  <title>Аврора Полёт — симулятор БПЛА</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
   <link rel="stylesheet" href="styles.css">
+  <title>Аврора Полёт</title>
 </head>
 <body>
   <div class="boot" id="boot" aria-live="polite">
-    <div class="boot-mark">A</div>
-    <div><b>АВРОРА ПОЛЁТ</b><span>Подготовка тренажёра…</span></div>
+    <div class="boot-logo"><span>A</span><i></i></div>
+    <div><b>АВРОРА ПОЛЁТ</b><span id="bootText">Подготовка тренажёра…</span></div>
+    <div class="boot-progress"><i></i></div>
   </div>
 
   <header class="topbar glass">
-    <button class="brand" id="menuBtn" aria-label="Открыть ангар">
+    <button class="brand" id="menuBtn" aria-label="Открыть центр управления">
       <span class="brand-mark">A</span>
       <span><b>АВРОРА</b><small>ПОЛЁТ</small></span>
     </button>
+    <div class="career-pill" id="careerPill">
+      <span class="level-badge" id="levelBadge">1</span>
+      <div><small>ПИЛОТ</small><b id="pilotRank">Курсант</b></div>
+      <div class="xp-mini"><i id="xpMiniBar"></i></div>
+      <strong id="creditsTop">0 ₽</strong>
+    </div>
     <div class="flight-state" id="flightState"><i></i><span>ГОТОВ К ПОДГОТОВКЕ</span></div>
     <div class="top-actions">
-      <button class="icon-btn" id="helpBtn" title="Управление">?</button>
-      <button class="icon-btn" id="soundBtn" title="Звук">🔊</button>
+      <button class="icon-btn" id="helpBtn" title="Управление" aria-label="Управление">?</button>
+      <button class="icon-btn" id="settingsBtn" title="Настройки" aria-label="Настройки">⚙</button>
+      <button class="icon-btn" id="soundBtn" title="Звук" aria-label="Звук">🔊</button>
       <button class="text-btn" id="fullscreenBtn">На весь экран</button>
     </div>
   </header>
 
   <main class="app-shell">
-    <aside class="hangar glass" id="hangar" aria-label="Ангар и настройки">
-      <div class="hangar-head">
-        <div><span class="eyebrow">АНГАР</span><h1>Выбор аппарата</h1></div>
-        <button class="icon-btn close-panel" id="closeHangar" aria-label="Закрыть ангар">×</button>
+    <aside class="control-center glass" id="controlCenter" aria-label="Центр управления">
+      <div class="panel-head">
+        <div><span class="eyebrow">ЦЕНТР УПРАВЛЕНИЯ</span><h1 id="panelTitle">Подготовка полёта</h1></div>
+        <button class="icon-btn close-panel" id="closePanel" aria-label="Закрыть">×</button>
       </div>
+      <nav class="panel-tabs" id="panelTabs">
+        <button class="active" data-tab="flight"><span>⌁</span>Полёт</button>
+        <button data-tab="hangar"><span>✣</span>Ангар</button>
+        <button data-tab="career"><span>★</span>Карьера</button>
+        <button data-tab="log"><span>≡</span>Журнал</button>
+      </nav>
 
-      <div class="segmented" id="categoryTabs">
-        <button class="active" data-category="all">Все</button>
-        <button data-category="civil">Гражданские</button>
-        <button data-category="mil">ВС РФ</button>
-      </div>
+      <section class="panel-view active" data-view="flight">
+        <article class="panel-card mode-card">
+          <div class="card-title"><span class="eyebrow">РЕЖИМ</span><b id="selectedMissionName">Маршрутная подготовка</b></div>
+          <div class="mission-grid" id="missionGrid"></div>
+          <p class="muted" id="missionDescription"></p>
+        </article>
 
-      <label class="field">Модель
-        <select id="modelSelect"></select>
-      </label>
+        <article class="panel-card setup-card">
+          <span class="eyebrow">УСЛОВИЯ ПОЛЁТА</span>
+          <div class="two-fields">
+            <label class="field">Сложность
+              <select id="difficultySelect">
+                <option value="easy">Курсант</option>
+                <option value="normal" selected>Пилот</option>
+                <option value="hard">Инструктор</option>
+              </select>
+            </label>
+            <label class="field">Погода
+              <select id="weatherSelect">
+                <option value="calm">Штиль</option>
+                <option value="breeze" selected>Лёгкий ветер</option>
+                <option value="windy">Порывистый ветер</option>
+                <option value="fog">Туман</option>
+                <option value="rain">Дождь</option>
+                <option value="snow">Снег</option>
+              </select>
+            </label>
+          </div>
+          <div class="two-fields">
+            <label class="field">Время
+              <select id="timeSelect">
+                <option value="day">День</option>
+                <option value="sunset">Сумерки</option>
+                <option value="night">Ночь</option>
+              </select>
+            </label>
+            <label class="field">Камера
+              <select id="cameraSelect">
+                <option value="top">Карта сверху</option>
+                <option value="chase">Сопровождение</option>
+                <option value="cinematic">Кинематографично</option>
+              </select>
+            </label>
+          </div>
+          <button class="secondary wide" id="chooseHomeBtn">Изменить место старта</button>
+          <button class="secondary wide hidden" id="routeEditBtn">Поставить точки маршрута</button>
+          <button class="ghost wide" id="briefingBtn">Открыть инструктаж</button>
+          <button class="primary wide launch-main" id="launchBtn"><span>▶</span> Запустить аппарат</button>
+        </article>
 
-      <article class="model-card" id="modelCard"></article>
+        <article class="panel-card live-card" id="liveMissionCard">
+          <div class="mission-row"><span>Выполнено</span><strong id="missionCounter">0 / 3</strong></div>
+          <div class="progress"><i id="missionProgress"></i></div>
+          <p id="liveMissionText">Пройдите контрольные точки и вернитесь домой.</p>
+        </article>
 
-      <article class="panel-card mission-card">
-        <div class="card-title"><span class="eyebrow">УЧЕБНАЯ МИССИЯ</span><b id="missionTitle">Маршрутная подготовка</b></div>
-        <div class="mission-row"><span>Контрольные точки</span><strong id="gateCounter">0 / 3</strong></div>
-        <div class="progress"><i id="missionProgress"></i></div>
-        <p id="missionDescription">Пройдите три контрольных кольца, вернитесь к месту старта и выполните мягкую посадку.</p>
-      </article>
+        <p class="safety-note">Игровая симуляция с условными характеристиками. Вооружение, наведение, поражение целей и боевые задания отсутствуют.</p>
+      </section>
 
-      <article class="panel-card setup-card">
-        <span class="eyebrow">УСЛОВИЯ ПОЛЁТА</span>
-        <div class="two-fields">
-          <label class="field">Погода
-            <select id="weatherSelect">
-              <option value="calm">Штиль</option>
-              <option value="breeze">Лёгкий ветер</option>
-              <option value="windy">Порывистый ветер</option>
-              <option value="fog">Туман</option>
-            </select>
-          </label>
-          <label class="field">Время
-            <select id="timeSelect">
-              <option value="day">День</option>
-              <option value="sunset">Сумерки</option>
-              <option value="night">Ночь</option>
-            </select>
-          </label>
+      <section class="panel-view" data-view="hangar">
+        <div class="segmented" id="categoryTabs">
+          <button class="active" data-category="all">Все</button>
+          <button data-category="civil">Гражданские</button>
+          <button data-category="mil">ВС РФ</button>
         </div>
-        <button class="secondary wide" id="chooseHomeBtn">Указать старт на карте</button>
-        <button class="primary wide" id="launchBtn">Запустить аппарат</button>
-      </article>
+        <label class="field">Выбранный аппарат
+          <select id="modelSelect"></select>
+        </label>
+        <article class="model-card" id="modelCard"></article>
+        <div class="hangar-list" id="hangarList"></div>
+        <article class="panel-card upgrades-card">
+          <span class="eyebrow">МОДЕРНИЗАЦИЯ</span>
+          <div id="upgradeList"></div>
+        </article>
+      </section>
 
-      <p class="safety-note">Игровая симуляция с условными характеристиками. Вооружение, наведение, поражение целей и боевые задания отсутствуют.</p>
+      <section class="panel-view" data-view="career">
+        <article class="profile-card">
+          <div class="profile-avatar">A</div>
+          <div><span class="eyebrow">КАРЬЕРА ПИЛОТА</span><h2 id="careerRank">Курсант</h2><p id="careerLevelText">Уровень 1</p></div>
+        </article>
+        <div class="career-stats" id="careerStats"></div>
+        <article class="panel-card">
+          <div class="card-title row"><span class="eyebrow">ОПЫТ</span><b id="xpText">0 / 1000</b></div>
+          <div class="progress large"><i id="xpBar"></i></div>
+        </article>
+        <article class="panel-card">
+          <span class="eyebrow">ДОСТИЖЕНИЯ</span>
+          <div class="achievement-grid" id="achievementGrid"></div>
+        </article>
+      </section>
+
+      <section class="panel-view" data-view="log">
+        <article class="panel-card">
+          <div class="card-title row"><span class="eyebrow">ЖУРНАЛ ПОЛЁТОВ</span><button class="tiny-btn" id="clearLogBtn">Очистить</button></div>
+          <div class="flight-log" id="flightLog"></div>
+        </article>
+        <article class="panel-card">
+          <span class="eyebrow">ЛУЧШИЕ РЕЗУЛЬТАТЫ</span>
+          <div class="record-list" id="recordList"></div>
+        </article>
+      </section>
     </aside>
 
-    <section class="world" id="world">
-      <div class="map" id="map" aria-label="Карта полёта">
-        <div class="tile-layer" id="tileLayer"></div>
-        <canvas id="routeCanvas"></canvas>
-        <div class="landing-zone" id="landingZone"><span>H</span></div>
-        <div class="aircraft" id="aircraft" aria-label="БПЛА"></div>
-        <div class="weather-overlay" id="weatherOverlay"></div>
+    <section class="world camera-top" id="world">
+      <div class="map-shell" id="mapShell">
+        <div class="map-stage" id="mapStage">
+          <div class="map" id="map" aria-label="Карта полёта">
+            <div class="tile-layer" id="tileLayer"></div>
+            <canvas id="routeCanvas"></canvas>
+            <div class="landing-zone" id="landingZone"><span>H</span></div>
+            <div class="mission-target" id="missionTarget"><span>1</span></div>
+            <div class="aircraft-shadow" id="aircraftShadow"></div>
+            <div class="aircraft" id="aircraft" aria-label="БПЛА"><i></i></div>
+          </div>
+        </div>
+        <div class="weather-overlay" id="weatherOverlay"><div class="particles" id="particles"></div></div>
+        <div class="vignette"></div>
+        <div class="signal-overlay" id="signalOverlay">СЛАБЫЙ СИГНАЛ</div>
         <div class="map-attribution">© OpenStreetMap contributors</div>
+        <div class="offline-badge hidden" id="offlineBadge">Карта недоступна — используется сетка</div>
       </div>
 
       <div class="telemetry glass" aria-label="Телеметрия">
@@ -95,12 +180,17 @@
         <div><small>ДАЛЬНОСТЬ</small><b id="distanceValue">0 м</b></div>
         <div><small>КУРС</small><b><span id="headingValue">000</span><em>°</em></b></div>
         <div><small>ЭНЕРГИЯ</small><b id="batteryValue">100%</b></div>
+        <div><small>СИГНАЛ</small><b id="signalValue">100%</b></div>
       </div>
 
+      <div class="compass glass" id="compass"><div class="compass-tape" id="compassTape"></div><i></i></div>
+
       <div class="map-controls glass">
+        <button id="searchBtn" title="Поиск места">⌕</button>
         <button id="zoomInBtn" title="Приблизить">+</button>
         <button id="zoomOutBtn" title="Отдалить">−</button>
         <button id="centerBtn" title="К месту старта">⌂</button>
+        <button id="cameraBtn" title="Сменить камеру">◈</button>
       </div>
 
       <div class="flight-actions glass">
@@ -114,44 +204,81 @@
 
       <div class="objective glass" id="objectivePanel">
         <span id="objectiveIndex">1</span>
-        <div><small>ТЕКУЩАЯ ЗАДАЧА</small><b id="objectiveText">Укажите место старта</b></div>
+        <div><small>ТЕКУЩАЯ ЗАДАЧА</small><b id="objectiveText">Подготовьте аппарат к запуску</b><em id="objectiveHint">Выберите миссию и условия</em></div>
+      </div>
+
+      <div class="event-card glass hidden" id="eventCard">
+        <span id="eventIcon">!</span><div><small>НЕШТАТНАЯ СИТУАЦИЯ</small><b id="eventTitle"></b><p id="eventText"></p></div>
       </div>
 
       <div class="status-toast" id="toast" role="status"></div>
 
       <div class="touch-controls" id="touchControls" aria-label="Сенсорное управление">
-        <div class="touch-cluster steering">
-          <button data-control="left">↶</button>
-          <button data-control="right">↷</button>
+        <div class="joystick" id="leftStick" data-stick="left"><div class="stick-knob"></div><span>ПОВОРОТ / ТЯГА</span></div>
+        <div class="mobile-actions">
+          <button data-action="rth">⌂</button><button data-action="pause">Ⅱ</button><button data-action="land">↓</button>
         </div>
-        <div class="touch-cluster altitude-control">
-          <button data-control="up">↑</button>
-          <button data-control="down">↓</button>
-        </div>
-        <div class="touch-cluster throttle-control">
-          <button data-control="more">＋</button>
-          <button data-control="less">−</button>
-        </div>
+        <div class="joystick" id="rightStick" data-stick="right"><div class="stick-knob"></div><span>КУРС / ВЫСОТА</span></div>
       </div>
     </section>
   </main>
 
   <dialog id="helpDialog">
-    <form method="dialog" class="dialog-card glass">
+    <form method="dialog" class="dialog-card glass help-dialog">
       <button class="dialog-close" aria-label="Закрыть">×</button>
       <span class="eyebrow">УПРАВЛЕНИЕ</span>
       <h2>Пульт пилота</h2>
-      <div class="key-grid">
-        <div><kbd>A</kbd><kbd>D</kbd><span>поворот</span></div>
-        <div><kbd>↑</kbd><kbd>↓</kbd><span>высота</span></div>
-        <div><kbd>W</kbd><kbd>S</kbd><span>тяга</span></div>
-        <div><kbd>R</kbd><span>возврат домой</span></div>
-        <div><kbd>L</kbd><span>посадка</span></div>
-        <div><kbd>Space</kbd><span>запуск</span></div>
-        <div><kbd>P</kbd><span>пауза</span></div>
+      <div class="help-columns">
+        <div class="key-grid">
+          <div><kbd>A</kbd><kbd>D</kbd><span>поворот</span></div>
+          <div><kbd>↑</kbd><kbd>↓</kbd><span>высота</span></div>
+          <div><kbd>W</kbd><kbd>S</kbd><span>тяга</span></div>
+          <div><kbd>R</kbd><span>возврат домой</span></div>
+          <div><kbd>L</kbd><span>посадка</span></div>
+          <div><kbd>P</kbd><span>пауза</span></div>
+          <div><kbd>C</kbd><span>смена камеры</span></div>
+        </div>
+        <div class="help-tips">
+          <h3>Подсказки</h3>
+          <p>Самолётные аппараты теряют высоту при малой скорости. Мультикоптеры могут зависать.</p>
+          <p>На телефоне используйте два виртуальных стика. В настройках регулируется чувствительность.</p>
+          <p>При низком заряде включится автоматический возврат.</p>
+        </div>
       </div>
-      <p>Для самолётных аппаратов сохраняйте скорость. Для мультикоптеров доступно зависание.</p>
       <button class="primary wide">Понятно</button>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog">
+    <form method="dialog" class="dialog-card glass settings-dialog">
+      <button class="dialog-close" aria-label="Закрыть">×</button>
+      <span class="eyebrow">НАСТРОЙКИ</span><h2>Тренажёр</h2>
+      <label class="setting-row"><span><b>Чувствительность</b><small>Скорость реакции виртуальных стиков</small></span><input id="sensitivityRange" type="range" min="60" max="160" value="100"><strong id="sensitivityValue">100%</strong></label>
+      <label class="setting-row"><span><b>Качество графики</b><small>Количество эффектов и частиц</small></span><select id="qualitySelect"><option value="low">Низкое</option><option value="medium">Среднее</option><option value="high">Высокое</option></select></label>
+      <label class="switch-row"><span><b>Виброотклик</b><small>Короткая вибрация при событиях</small></span><input id="hapticsToggle" type="checkbox"></label>
+      <label class="switch-row"><span><b>Автопомощь</b><small>Стабилизация высоты и мягкая посадка</small></span><input id="assistToggle" type="checkbox"></label>
+      <label class="switch-row"><span><b>Показывать след</b><small>Линия пройденного маршрута</small></span><input id="trailToggle" type="checkbox"></label>
+      <button class="primary wide">Сохранить</button>
+    </form>
+  </dialog>
+
+  <dialog id="briefingDialog">
+    <form method="dialog" class="dialog-card glass briefing-dialog">
+      <button class="dialog-close" aria-label="Закрыть">×</button>
+      <span class="eyebrow">ПРЕДПОЛЁТНЫЙ ИНСТРУКТАЖ</span>
+      <h2 id="briefingTitle">Маршрутная подготовка</h2>
+      <p id="briefingDescription"></p>
+      <div class="briefing-grid" id="briefingGrid"></div>
+      <button class="primary wide" id="briefingLaunchBtn" value="cancel">К запуску</button>
+    </form>
+  </dialog>
+
+  <dialog id="searchDialog">
+    <form method="dialog" class="dialog-card glass search-dialog" id="searchForm">
+      <button class="dialog-close" aria-label="Закрыть">×</button>
+      <span class="eyebrow">ПОИСК НА КАРТЕ</span><h2>Город или адрес</h2>
+      <div class="search-line"><input id="placeInput" placeholder="Например: Белгород"><button class="primary" id="placeSearchBtn">Найти</button></div>
+      <div class="search-results" id="searchResults"><p>Поиск использует открытый сервис Nominatim. При отсутствии сети можно выбрать точку вручную.</p></div>
     </form>
   </dialog>
 
@@ -163,14 +290,26 @@
       <p id="resultDescription">Учебная миссия завершена.</p>
       <div class="result-stats">
         <div><small>ОЧКИ</small><b id="scoreValue">0</b></div>
+        <div><small>НАГРАДА</small><b id="rewardValue">0 ₽</b></div>
+        <div><small>ОПЫТ</small><b id="earnedXpValue">0 XP</b></div>
+        <div><small>ТОЧНОСТЬ</small><b id="accuracyValue">0%</b></div>
         <div><small>ВРЕМЯ</small><b id="timeValue">00:00</b></div>
         <div><small>ДИСТАНЦИЯ</small><b id="totalDistanceValue">0 м</b></div>
-        <div><small>ТОЧНОСТЬ</small><b id="accuracyValue">0%</b></div>
       </div>
-      <button class="primary wide" id="newFlightBtn">Новый полёт</button>
+      <div class="result-actions"><button class="secondary" id="replayBtn" value="cancel">Повтор полёта</button><button class="primary" id="newFlightBtn">Новый полёт</button></div>
     </form>
   </dialog>
 
+  <dialog id="replayDialog">
+    <form method="dialog" class="dialog-card replay-card glass">
+      <button class="dialog-close" aria-label="Закрыть">×</button>
+      <span class="eyebrow">ПОВТОР ПОЛЁТА</span><h2 id="replayTitle">Маршрут</h2>
+      <div class="replay-map" id="replayMap"><canvas id="replayCanvas"></canvas><i id="replayDot"></i></div>
+      <div class="replay-controls"><button id="replayPlayBtn" value="cancel">▶ Воспроизвести</button><input id="replayRange" type="range" min="0" max="100" value="0"><span id="replayTime">00:00</span></div>
+    </form>
+  </dialog>
+
+  <script src="data.js"></script>
   <script src="app.js"></script>
   <script src="map.js"></script>
   <script src="flight.js"></script>
