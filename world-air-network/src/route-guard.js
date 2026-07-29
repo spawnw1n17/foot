@@ -5,8 +5,27 @@ const worldMap = document.querySelector('#worldMap');
 const cityPoints = CITY_CATALOG.map((city) => ({ ...projectCity(city), id: city.id }));
 const CITY_PRIORITY_RADIUS = 18;
 
+installMapClarityStyles();
+
 if (worldMap) {
   worldMap.addEventListener('click', prioritizeCityAtRouteEndpoint, true);
+}
+
+function installMapClarityStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .city-node text { transition: opacity 140ms ease, font-size 140ms ease; }
+    .city-node.closed text { opacity: 0; pointer-events: none; }
+    .city-node.closed:hover text,
+    .city-node.closed:focus text,
+    .city-node.closed.selected text,
+    .city-node.closed.search-match text { opacity: 1; }
+    .city-node.open text { opacity: .88; }
+    .city-node.open:hover text,
+    .city-node.open:focus text,
+    .city-node.open.selected text { opacity: 1; }
+  `;
+  document.head.append(style);
 }
 
 function prioritizeCityAtRouteEndpoint(event) {
