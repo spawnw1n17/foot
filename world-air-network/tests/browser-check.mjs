@@ -167,9 +167,14 @@ async function runMobileScenario() {
 
 async function clickCityOnMap(page, cityId) {
   const node = page.locator(`#cityLayer [data-city-id="${cityId}"]`);
-  const box = await node.boundingBox();
-  assert.ok(box, `Город ${cityId} должен иметь координаты на карте`);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  const point = await node.evaluate((element) => {
+    const matrix = element.getScreenCTM();
+    if (!matrix) return null;
+    const center = new DOMPoint(0, 0).matrixTransform(matrix);
+    return { x: center.x, y: center.y };
+  });
+  assert.ok(point, `Город ${cityId} должен иметь экранные координаты`);
+  await page.mouse.click(point.x, point.y);
 }
 
 function attachDiagnostics(page, label) {
