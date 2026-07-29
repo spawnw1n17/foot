@@ -4,8 +4,11 @@ import { projectCity } from './engine.js';
 const worldMap = document.querySelector('#worldMap');
 const cityPoints = CITY_CATALOG.map((city) => ({ ...projectCity(city), id: city.id }));
 const CITY_PRIORITY_RADIUS = 18;
+const TUTORIAL_KEY = 'aerosphere-tutorial-complete';
 
 installMapClarityStyles();
+installTutorialCompletion();
+installPointerFocusCleanup();
 
 if (worldMap) {
   worldMap.addEventListener('click', prioritizeCityAtRouteEndpoint, true);
@@ -24,8 +27,49 @@ function installMapClarityStyles() {
     .city-node.open:hover text,
     .city-node.open:focus text,
     .city-node.open.selected text { opacity: 1; }
+    .skip-link:focus:not(:focus-visible) { transform: translateY(-160%); }
+    .map-panel,
+    .side-panel { scroll-margin-top: calc(88px + var(--safe-top)); }
+    @media (max-width: 640px) {
+      .map-panel,
+      .side-panel { scroll-margin-top: calc(112px + var(--safe-top)); }
+    }
   `;
   document.head.append(style);
+}
+
+function installTutorialCompletion() {
+  const card = document.querySelector('#tutorialCard');
+  const close = document.querySelector('#closeTutorial');
+  const routeLayer = document.querySelector('#routeLayer');
+  if (!card) return;
+
+  const complete = () => {
+    card.classList.add('hidden');
+    try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
+  };
+
+  try {
+    if (localStorage.getItem(TUTORIAL_KEY) === '1') card.classList.add('hidden');
+  } catch {}
+
+  close?.addEventListener('click', complete, { once: true });
+
+  if (routeLayer) {
+    const observer = new MutationObserver(() => {
+      if (routeLayer.querySelectorAll('[data-route-id]').length >= 3) {
+        complete();
+        observer.disconnect();
+      }
+    });
+    observer.observe(routeLayer, { childList: true });
+  }
+}
+
+function installPointerFocusCleanup() {
+  document.addEventListener('pointerdown', () => {
+    if (document.activeElement?.classList?.contains('skip-link')) document.activeElement.blur();
+  }, true);
 }
 
 function prioritizeCityAtRouteEndpoint(event) {
