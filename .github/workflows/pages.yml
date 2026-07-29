@@ -23,6 +23,12 @@ jobs:
         with:
           node-version: 22
       - run: npm run check
+      - name: Validate UAV simulator modules
+        run: |
+          node --check uav-sim/app.js
+          node --check uav-sim/map.js
+          node --check uav-sim/flight.js
+          node --check uav-sim/controls.js
 
   deploy:
     needs: validate
@@ -33,6 +39,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .
