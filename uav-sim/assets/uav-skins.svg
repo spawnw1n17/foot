@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="whiteBody" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".48" stop-color="#dce5e8"/><stop offset="1" stop-color="#8d9ba0"/></linearGradient>
+    <linearGradient id="darkBody" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#69747b"/><stop offset=".42" stop-color="#283137"/><stop offset="1" stop-color="#0c1114"/></linearGradient>
+    <linearGradient id="oliveBody" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a1aa76"/><stop offset=".48" stop-color="#5e6943"/><stop offset="1" stop-color="#27301f"/></linearGradient>
+    <linearGradient id="orangeBody" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffbb2c"/><stop offset=".52" stop-color="#ff6a00"/><stop offset="1" stop-color="#8c2600"/></linearGradient>
+    <linearGradient id="redBody" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff6655"/><stop offset=".52" stop-color="#bd1414"/><stop offset="1" stop-color="#3d0707"/></linearGradient>
+    <radialGradient id="glass"><stop offset="0" stop-color="#8fe8ff"/><stop offset=".45" stop-color="#1c6680"/><stop offset="1" stop-color="#071923"/></radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity=".55"/></filter>
+    <g id="rotor"><circle r="10.5" fill="none" stroke="#8f999f" stroke-width="1.2" opacity=".55"/><path d="M-13 0 C-6-2 4-2 13 0 C5 2-5 2-13 0Z" fill="#222a2f" opacity=".92"/><circle r="2.7" fill="#aeb9be" stroke="#111" stroke-width="1"/></g>
+    <g id="redRotor"><circle r="10.5" fill="none" stroke="#ff4237" stroke-width="1.2" opacity=".55"/><path d="M-13 0 C-6-2 4-2 13 0 C5 2-5 2-13 0Z" fill="#ef291f"/><circle r="2.7" fill="#6f0d0d" stroke="#111" stroke-width="1"/></g>
+    <g id="smallRotor"><path d="M-8 0 C-3-1.8 3-1.8 8 0 C3 1.8-3 1.8-8 0Z" fill="#242b2f"/><circle r="1.8" fill="#a8b0b3"/></g>
+  </defs>
+
+  <g transform="translate(64 64)" filter="url(#shadow)">
+    <path d="M0-20 L11-7 L22-22 L27-17 L16-2 L23 13 L17 18 L7 7 L0 22 L-7 7 L-17 18 L-23 13 L-16-2 L-27-17 L-22-22 L-11-7Z" fill="url(#whiteBody)" stroke="#68777d" stroke-width="1.4"/>
+    <circle cy="3" r="7" fill="url(#glass)" stroke="#17262d" stroke-width="1.4"/>
+    <g transform="translate(-28 -24)"><use href="#rotor"/></g><g transform="translate(28 -24)"><use href="#rotor"/></g><g transform="translate(-28 24)"><use href="#rotor"/></g><g transform="translate(28 24)"><use href="#rotor"/></g>
+  </g>
+
+  <g transform="translate(192 64)" filter="url(#shadow)">
+    <path d="M-27-18 L-10-9 L-8-20 H8 L10-9 L27-18 L31-11 L13 1 L25 18 L18 23 L6 10 H-6 L-18 23 L-25 18 L-13 1 L-31-11Z" fill="url(#darkBody)" stroke="#11181c" stroke-width="1.4"/>
+    <rect x="-11" y="-17" width="22" height="30" rx="6" fill="#3b474e" stroke="#111"/><circle cy="17" r="6.2" fill="#131b20" stroke="#6e7a80"/><circle cy="17" r="3" fill="url(#glass)"/>
+    <g transform="translate(-31 -20)"><use href="#rotor"/></g><g transform="translate(31 -20)"><use href="#rotor"/></g><g transform="translate(-31 20)"><use href="#rotor"/></g><g transform="translate(31 20)"><use href="#rotor"/></g>
+  </g>
+
+  <g transform="translate(320 64)" filter="url(#shadow)">
+    <path d="M0-25 L13-15 L15 10 L8 25 H-8 L-15 10 L-13-15Z" fill="url(#darkBody)" stroke="#0a0e11" stroke-width="1.6"/>
+    <rect x="-12" y="-8" width="24" height="25" rx="4" fill="#465159" stroke="#111"/><path d="M-8 18h16l-3 9h-10Z" fill="#20272b"/>
+    <g stroke="#283238" stroke-width="4" stroke-linecap="round"><path d="M-9-14L-30-27"/><path d="M9-14L30-27"/><path d="M-14 0L-36 0"/><path d="M14 0L36 0"/><path d="M-9 14L-29 27"/><path d="M9 14L29 27"/></g>
+    <g transform="translate(-34 -29)"><use href="#rotor"/></g><g transform="translate(34 -29)"><use href="#rotor"/></g><g transform="translate(-40 0)"><use href="#rotor"/></g><g transform="translate(40 0)"><use href="#rotor"/></g><g transform="translate(-33 30)"><use href="#rotor"/></g><g transform="translate(33 30)"><use href="#rotor"/></g>
+  </g>
+
+  <g transform="translate(448 64)" filter="url(#shadow)">
+    <path d="M0-24 L8-13 L15-6 L10 20 L0 27 L-10 20 L-15-6 L-8-13Z" fill="url(#darkBody)" stroke="#050708" stroke-width="1.5"/>
+    <path d="M-5-19h10l4 7H-9Z" fill="url(#glass)"/><g stroke="#8d1712" stroke-width="5" stroke-linecap="round"><path d="M-10-10L-28-24"/><path d="M10-10L28-24"/><path d="M-10 12L-28 24"/><path d="M10 12L28 24"/></g>
+    <g transform="translate(-31 -27)"><use href="#redRotor"/></g><g transform="translate(31 -27)"><use href="#redRotor"/></g><g transform="translate(-31 27)"><use href="#redRotor"/></g><g transform="translate(31 27)"><use href="#redRotor"/></g>
+  </g>
+
+  <g transform="translate(64 192)" filter="url(#shadow)">
+    <path d="M0-24 L10-12 L48 11 L45 20 L10 12 L0 27 L-10 12 L-45 20 L-48 11 L-10-12Z" fill="url(#whiteBody)" stroke="#77878d" stroke-width="1.5"/>
+    <path d="M-7-10h14l4 18H-11Z" fill="#313c43"/><circle cy="8" r="4" fill="url(#glass)"/><path d="M-37 13L-10 5M37 13L10 5" stroke="#8c9aa0" opacity=".6"/>
+  </g>
+
+  <g transform="translate(192 192)" filter="url(#shadow)">
+    <path d="M0-33 L7-16 L10 25 L5 35 H-5 L-10 25 L-7-16Z" fill="url(#orangeBody)" stroke="#6d2500" stroke-width="1.5"/>
+    <path d="M-8-6 L-40 7 L-41 15 L-8 11 M8-6 L40 7 L41 15 L8 11" fill="url(#whiteBody)" stroke="#69777d" stroke-width="1.3"/>
+    <path d="M-6 22L-23 31L-21 36L0 29L21 36L23 31L6 22" fill="#313d43"/>
+    <g transform="translate(-31 5)"><use href="#smallRotor"/></g><g transform="translate(31 5)"><use href="#smallRotor"/></g><g transform="translate(0 34) rotate(90)"><use href="#smallRotor"/></g>
+  </g>
+
+  <g transform="translate(320 192)" filter="url(#shadow)">
+    <path d="M0-24 L9-13 L14-3 L10 20 L0 28 L-10 20 L-14-3 L-9-13Z" fill="url(#redBody)" stroke="#4a0808" stroke-width="1.5"/>
+    <rect x="-5" y="-14" width="10" height="20" rx="3" fill="#202a2f"/><path d="M-3-7H3M0-10V-4" stroke="#fff" stroke-width="1.5"/>
+    <g stroke="#4b1615" stroke-width="5" stroke-linecap="round"><path d="M-10-9L-29-25"/><path d="M10-9L29-25"/><path d="M-10 11L-29 25"/><path d="M10 11L29 25"/></g>
+    <g transform="translate(-32 -28)"><use href="#redRotor"/></g><g transform="translate(32 -28)"><use href="#redRotor"/></g><g transform="translate(-32 28)"><use href="#redRotor"/></g><g transform="translate(32 28)"><use href="#redRotor"/></g>
+  </g>
+
+  <g transform="translate(448 192)" filter="url(#shadow)">
+    <ellipse rx="15" ry="27" fill="url(#oliveBody)" stroke="#202719" stroke-width="1.6"/><rect x="-9" y="9" width="18" height="18" rx="4" fill="#4d5635"/>
+    <g stroke="#3f4930" stroke-width="3.4" stroke-linecap="round"><path d="M-10-15L-29-28"/><path d="M10-15L29-28"/><path d="M-14-4L-38-8"/><path d="M14-4L38-8"/><path d="M-14 7L-38 12"/><path d="M14 7L38 12"/><path d="M-9 17L-27 30"/><path d="M9 17L27 30"/></g>
+    <g transform="translate(-32 -30)"><use href="#smallRotor"/></g><g transform="translate(32 -30)"><use href="#smallRotor"/></g><g transform="translate(-41 -9)"><use href="#smallRotor"/></g><g transform="translate(41 -9)"><use href="#smallRotor"/></g><g transform="translate(-41 13)"><use href="#smallRotor"/></g><g transform="translate(41 13)"><use href="#smallRotor"/></g><g transform="translate(-30 33)"><use href="#smallRotor"/></g><g transform="translate(30 33)"><use href="#smallRotor"/></g>
+  </g>
+
+  <g transform="translate(64 320)" filter="url(#shadow)">
+    <path d="M0-35 L6-15 L7 31 L0 38 L-7 31 L-6-15Z" fill="url(#whiteBody)" stroke="#66747a" stroke-width="1.4"/><path d="M-5-4L-45 8L-45 16L-5 10M5-4L45 8L45 16L5 10" fill="url(#whiteBody)" stroke="#66747a" stroke-width="1.2"/><path d="M-5 24L-20 34L-18 39L0 31L18 39L20 34L5 24" fill="#aab5b9"/><g transform="translate(0 39) rotate(90)"><use href="#smallRotor"/></g><circle cy="-10" r="3" fill="url(#glass)"/>
+  </g>
+
+  <g transform="translate(192 320)" filter="url(#shadow)">
+    <path d="M0-31 L6-13 L7 28 L0 35 L-7 28 L-6-13Z" fill="url(#oliveBody)" stroke="#28311f" stroke-width="1.4"/><path d="M-5-3L-42 9L-42 16L-5 9M5-3L42 9L42 16L5 9" fill="url(#oliveBody)" stroke="#28311f" stroke-width="1.2"/><path d="M-5 23L-17 33L-15 37L0 30L15 37L17 33L5 23" fill="#3a452c"/><g transform="translate(0 36) rotate(90)"><use href="#smallRotor"/></g>
+  </g>
+
+  <g transform="translate(320 320)" filter="url(#shadow)">
+    <path d="M0-34 L7-15 L8 31 L0 38 L-8 31 L-7-15Z" fill="url(#whiteBody)" stroke="#6a787e" stroke-width="1.4"/><path d="M-6-2 L-47 13 L-44 21 L-5 10 M6-2 L47 13 L44 21 L5 10" fill="url(#whiteBody)" stroke="#6a787e" stroke-width="1.2"/><path d="M-5 23L-19 34L-17 39L0 31L17 39L19 34L5 23" fill="#bac4c7"/><circle cy="-7" r="3.5" fill="#1a252b"/>
+  </g>
+
+  <g transform="translate(448 320)" filter="url(#shadow)">
+    <path d="M0-36 L8-16 L9 32 L0 40 L-9 32 L-8-16Z" fill="url(#darkBody)" stroke="#0f1518" stroke-width="1.4"/><path d="M-6-2L-46 12L-44 20L-5 10M6-2L46 12L44 20L5 10" fill="url(#darkBody)" stroke="#11181c" stroke-width="1.2"/><path d="M-6 24L-20 35L-17 40L0 32L17 40L20 35L6 24" fill="#222b30"/><circle cy="-9" r="3.5" fill="url(#glass)"/>
+  </g>
+
+  <g transform="translate(64 448)" filter="url(#shadow)">
+    <path d="M0-38 L7-17 L8 30 L0 39 L-8 30 L-7-17Z" fill="url(#whiteBody)" stroke="#68767c" stroke-width="1.4"/><path d="M-7-4L-45 10L-44 18L-7 11M7-4L45 10L44 18L7 11" fill="url(#whiteBody)" stroke="#68767c" stroke-width="1.2"/><path d="M-28 9V34M28 9V34M-28 34H28" stroke="#8c999e" stroke-width="4"/><path d="M-36 34H36L30 41H-30Z" fill="#9da9ad" stroke="#657278"/>
+  </g>
+
+  <g transform="translate(192 448)" filter="url(#shadow)">
+    <path d="M0-41 L8-18 L9 34 L0 43 L-9 34 L-8-18Z" fill="url(#darkBody)" stroke="#0f1518" stroke-width="1.5"/><path d="M-7-3L-48 11L-47 18L-7 10M7-3L48 11L47 18L7 10" fill="url(#darkBody)" stroke="#11181c" stroke-width="1.3"/><path d="M-6 25L-22 36L-19 42L0 33L19 42L22 36L6 25" fill="#252e33"/><circle cy="-12" r="4" fill="url(#glass)"/>
+  </g>
+
+  <g transform="translate(320 448)" filter="url(#shadow)">
+    <path d="M0-42 L8-18 L10 34 L0 44 L-10 34 L-8-18Z" fill="url(#darkBody)" stroke="#0d1316" stroke-width="1.5"/><path d="M-8-3L-49 11L-48 19L-8 10M8-3L49 11L48 19L8 10" fill="url(#darkBody)" stroke="#0f1518" stroke-width="1.3"/><path d="M-29 10V35M29 10V35M-29 35H29" stroke="#283238" stroke-width="4"/><path d="M-37 35H37L31 43H-31Z" fill="#273137" stroke="#0f1518"/>
+  </g>
+
+  <g transform="translate(448 448)" filter="url(#shadow)">
+    <path d="M0-43 L7-18 L8 35 L0 44 L-8 35 L-7-18Z" fill="url(#whiteBody)" stroke="#67757b" stroke-width="1.4"/><path d="M-6-4L-52 12L-51 19L-6 10M6-4L52 12L51 19L6 10" fill="url(#whiteBody)" stroke="#67757b" stroke-width="1.2"/><path d="M-6 27L-23 38L-20 43L0 34L20 43L23 38L6 27" fill="#b8c3c6"/><g transform="translate(-33 6)"><use href="#smallRotor"/></g><g transform="translate(33 6)"><use href="#smallRotor"/></g><path d="M-42 10v12M42 10v12" stroke="#ff6a00" stroke-width="3"/>
+  </g>
+</svg>
