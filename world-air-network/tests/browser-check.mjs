@@ -73,9 +73,10 @@ async function runDesktopScenario() {
 
   await page.locator('[data-zoom="fit"]').click();
   assert.equal(Number(await page.locator('#worldMap').getAttribute('data-zoom')), 1, 'Полный вид должен сбрасывать масштаб');
-  await page.locator('#cityLayer [data-city-id="moscow"]').click();
+  await clickCityOnMap(page, 'moscow');
+  await page.waitForFunction(() => document.querySelector('#sideContent .panel-title')?.textContent?.includes('Москва'));
   await page.locator('[data-action="start-route"][data-city-id="moscow"]').click();
-  await page.locator('#cityLayer [data-city-id="minsk"]').click();
+  await clickCityOnMap(page, 'minsk');
   await page.locator('#confirmModal:not(.hidden)').waitFor();
   await page.locator('#modalConfirm').click();
   await page.waitForFunction(() => document.querySelectorAll('#routeLayer [data-route-id]').length === 3);
@@ -162,6 +163,13 @@ async function runMobileScenario() {
 
   activePage = null;
   await context.close();
+}
+
+async function clickCityOnMap(page, cityId) {
+  const node = page.locator(`#cityLayer [data-city-id="${cityId}"]`);
+  const box = await node.boundingBox();
+  assert.ok(box, `Город ${cityId} должен иметь координаты на карте`);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 }
 
 function attachDiagnostics(page, label) {
