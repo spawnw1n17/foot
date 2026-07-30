@@ -56,3 +56,12 @@ body.war-room-open{overflow:hidden}
   .notification-stack{top:8px;right:8px;max-width:245px}
   .notice{padding:8px 10px;font-size:9px}
 }
+
+
+/* Safe compact HUD placement after visual screenshot review */
+@media(max-width:900px){
+  .war-battle-panel.collapsed{top:155px;bottom:auto;right:8px;left:auto;width:min(280px,calc(100% - 16px))}
+}
+@media(max-height:520px) and (orientation:landscape){
+  .war-battle-panel.collapsed{top:8px;bottom:auto;left:8px;right:auto;width:min(260px,calc(100% - 16px))}
+}

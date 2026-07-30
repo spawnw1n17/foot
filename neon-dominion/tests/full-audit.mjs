@@ -257,13 +257,21 @@ async function mobileAudit() {
   await page.locator('[data-battle-action="toggle-hud"]').tap();
   assert.equal(await page.locator('#warBattlePanel').evaluate((node) => node.classList.contains('collapsed')), false);
   await page.locator('[data-battle-action="toggle-hud"]').tap();
+  const mobileOverlap = await page.evaluate(() => {
+    const hud = document.querySelector('#warBattlePanel')?.getBoundingClientRect();
+    const controls = document.querySelector('.group-controls')?.getBoundingClientRect();
+    const speed = document.querySelector('.speed-control')?.getBoundingClientRect();
+    const intersects = (a, b) => Boolean(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
+    return { group: intersects(hud, controls), speed: intersects(hud, speed) };
+  });
+  assert.deepEqual(mobileOverlap, { group: false, speed: false });
   await assertNoDocumentOverflow(page);
   await page.screenshot({ path: `${output}/full-audit-mobile-battle.png`, fullPage: true });
 
   assert.equal(diagnostics.errors.length, 0, `mobile errors: ${JSON.stringify(diagnostics.errors)}`);
   assert.equal(diagnostics.failed.length, 0, `mobile request failures: ${JSON.stringify(diagnostics.failed)}`);
   assert.equal(diagnostics.badResponses.length, 0, `mobile bad responses: ${JSON.stringify(diagnostics.badResponses)}`);
-  report.mobile = { home, shell, hud, diagnostics };
+  report.mobile = { home, shell, hud, mobileOverlap, diagnostics };
   await context.close();
 }
 
@@ -280,11 +288,19 @@ async function landscapeAudit() {
   const viewportFit = await page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, client: document.documentElement.clientHeight }));
   assert.ok(viewportFit.scroll <= viewportFit.client + 2, `landscape vertical overflow ${viewportFit.scroll}/${viewportFit.client}`);
   assert.equal(await page.locator('#warBattlePanel').evaluate((node) => node.classList.contains('collapsed')), true);
+  const landscapeOverlap = await page.evaluate(() => {
+    const hud = document.querySelector('#warBattlePanel')?.getBoundingClientRect();
+    const controls = document.querySelector('.group-controls')?.getBoundingClientRect();
+    const speed = document.querySelector('.speed-control')?.getBoundingClientRect();
+    const intersects = (a, b) => Boolean(a && b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top);
+    return { group: intersects(hud, controls), speed: intersects(hud, speed) };
+  });
+  assert.deepEqual(landscapeOverlap, { group: false, speed: false });
   await assertNoDocumentOverflow(page);
   await page.screenshot({ path: `${output}/full-audit-landscape-battle.png`, fullPage: true });
   assert.equal(diagnostics.errors.length, 0);
   assert.equal(diagnostics.badResponses.length, 0);
-  report.landscape = { canvas, viewportFit, diagnostics };
+  report.landscape = { canvas, viewportFit, landscapeOverlap, diagnostics };
   await page.close();
 }
 
