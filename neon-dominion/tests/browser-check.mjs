@@ -79,16 +79,24 @@ async function mobileScenario() {
 
   const box = await page.locator('#battlefield').boundingBox();
   assert.ok(box);
+  const p0 = mapPoint(box, 165, 360);
   const p1 = mapPoint(box, 320, 170);
   const r0 = mapPoint(box, 1020, 190);
 
   const initialSelection = await page.evaluate(() => window.NeonDominionQA.getSelection());
   assert.deepEqual(initialSelection, ['p0']);
-  await page.locator('#groupSelectBtn').click();
-  await page.touchscreen.tap(p1.x, p1.y);
-  await page.waitForFunction(() => window.NeonDominionQA.getSelection().length === 2);
-  await page.locator('#groupSendBtn').click();
-  await page.touchscreen.tap(r0.x, r0.y);
+  const client = await context.newCDPSession(page);
+  const point = (position) => ({ x: position.x, y: position.y, radiusX: 8, radiusY: 8, force: 1, id: 1 });
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point(p0)] });
+  for (let step = 1; step <= 12; step += 1) {
+    const t = step / 12;
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point({ x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t })] });
+  }
+  for (let step = 1; step <= 18; step += 1) {
+    const t = step / 18;
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [point({ x: p1.x + (r0.x - p1.x) * t, y: p1.y + (r0.y - p1.y) * t })] });
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await page.waitForFunction(() => window.NeonDominionQA.getState().convoys.filter((convoy) => convoy.to === 'r0').length >= 2);
 
   const state = await page.evaluate(() => window.NeonDominionQA.getState());
@@ -103,6 +111,8 @@ async function mobileScenario() {
   assert.ok(dimensions.scroll <= dimensions.client + 1);
   assert.ok(dimensions.canvas.height > 650);
   assert.equal(state.stats.groupOrders, 1);
+  assert.ok(state.nodes.find((node) => node.id === 'p0').troops < 3);
+  assert.ok(state.nodes.find((node) => node.id === 'p1').troops < 3);
   assert.equal(errors.length, 0);
 
   report.mobile = {
@@ -112,6 +122,7 @@ async function mobileScenario() {
     selection: await page.evaluate(() => window.NeonDominionQA.getSelection()),
     groupConvoys: state.convoys.filter((convoy) => convoy.to === 'r0').length,
     groupOrders: state.stats.groupOrders,
+    emptiedSources: state.nodes.filter((node) => ['p0', 'p1'].includes(node.id)).map((node) => ({ id: node.id, troops: node.troops })),
     errors,
   };
   await page.screenshot({ path: `${output}/mobile-group-selection.png`, fullPage: true });

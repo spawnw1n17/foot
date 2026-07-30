@@ -19,12 +19,21 @@ test('армия отправляется между любыми двумя б�
   assert.ok(Number.isFinite(engine.convoys[0].curve));
 });
 
-test('групповой приказ отправляет армии сразу с нескольких баз', () => {
+test('групповой приказ полностью опустошает базы и после отправки начинается новый набор', () => {
   const engine = new DominionEngine(MAPS[1], { seed: 7 });
+  const p0 = engine.nodes.p0.troops;
+  const p1 = engine.nodes.p1.troops;
   const sent = engine.sendMany(['p0', 'p1'], 'r0', 0.5, 'player');
   assert.equal(sent, 2);
   assert.equal(engine.convoys.length, 2);
+  assert.equal(engine.nodes.p0.troops, 0);
+  assert.equal(engine.nodes.p1.troops, 0);
+  assert.equal(engine.convoys.find((convoy) => convoy.from === 'p0').amount, p0);
+  assert.equal(engine.convoys.find((convoy) => convoy.from === 'p1').amount, p1);
   assert.equal(engine.stats.groupOrders, 1);
+  engine.update(0.05);
+  assert.ok(engine.nodes.p0.troops > 0);
+  assert.ok(engine.nodes.p1.troops > 0);
 });
 
 test('нейтральную базу можно захватить свободным маршрутом', () => {

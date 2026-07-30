@@ -218,7 +218,7 @@ function startLevel(id, options = {}) {
   dom.objectives.innerHTML = currentMap.objectives.map((objective) => `<div class="objective">${objective}</div>`).join('');
   dom.log.innerHTML = '';
   log(`Операция «${currentMap.title}» началась`);
-  notice('Свободное движение активно. Проведите от базы к любой цели.', 'good');
+  notice('Зажмите базу, проведите через другие свои базы и отпустите на цели.', 'good');
   setSpeed(1);
   resize();
   syncUI(true);
@@ -378,14 +378,14 @@ function pointerDown(event) {
   }
 
   if (hit?.owner === 'player') {
-    if (!selectedIds.has(hit.id)) selectOnly(hit.id);
-    const sourceIds = selectedIds.size ? [...selectedIds] : [hit.id];
+    selectOnly(hit.id);
     dragOrder = {
       pointerId: event.pointerId,
-      sourceIds,
+      sourceIds: [hit.id],
       startClientX: event.clientX,
       startClientY: event.clientY,
       moved: false,
+      hoverTargetId: null,
     };
     primarySelectedId = hit.id;
     selectedSignature = '';
@@ -430,13 +430,28 @@ function pointerMove(event) {
     const distance = Math.hypot(event.clientX - dragOrder.startClientX, event.clientY - dragOrder.startClientY);
     if (distance > 7) dragOrder.moved = true;
     const hit = hitNode(pointerWorld);
+
+    if (dragOrder.moved && hit?.owner === 'player' && !dragOrder.sourceIds.includes(hit.id)) {
+      dragOrder.sourceIds.push(hit.id);
+      selectedIds = new Set(dragOrder.sourceIds);
+      primarySelectedId = hit.id;
+      selectedSignature = '';
+      syncSelected(true);
+      syncGroupControls();
+      beep(520 + Math.min(180, dragOrder.sourceIds.length * 24), 0.04);
+      navigator.vibrate?.(18);
+    }
+
+    dragOrder.hoverTargetId = hit && !dragOrder.sourceIds.includes(hit.id) ? hit.id : null;
     dom.dragLabel.style.display = dragOrder.moved ? 'block' : 'none';
     dom.dragLabel.style.left = `${event.offsetX + 12}px`;
     dom.dragLabel.style.top = `${event.offsetY + 12}px`;
-    if (hit && !dragOrder.sourceIds.includes(hit.id)) {
-      dom.dragLabel.textContent = `${dragOrder.sourceIds.length} БАЗ → ${hit.id.toUpperCase()}`;
+    if (dragOrder.hoverTargetId) {
+      dom.dragLabel.textContent = `${dragOrder.sourceIds.length} БАЗ → ${hit.id.toUpperCase()} · ОТПУСТИТЕ`;
+    } else if (hit?.owner === 'player') {
+      dom.dragLabel.textContent = `${dragOrder.sourceIds.length} БАЗ В ЦЕПОЧКЕ`;
     } else {
-      dom.dragLabel.textContent = 'ВЕДИТЕ К ЛЮБОЙ БАЗЕ';
+      dom.dragLabel.textContent = 'ВЕДИТЕ ЧЕРЕЗ СВОИ БАЗЫ К ЦЕЛИ';
     }
   }
 }
@@ -463,7 +478,7 @@ function pointerUp(event) {
     selectionBox = null;
   } else if (dragOrder) {
     if (dragOrder.moved && target && !dragOrder.sourceIds.includes(target.id)) {
-      const sent = engine.sendMany(dragOrder.sourceIds, target.id, 0.52, 'player');
+      const sent = engine.sendMany(dragOrder.sourceIds, target.id, 1, 'player');
       if (sent) {
         beep(560, 0.055);
         log(`Группа из ${sent} баз направлена к ${target.id}`);
@@ -484,7 +499,7 @@ function pointerUp(event) {
 
 function sendSelectionTo(targetId) {
   const sources = [...selectedIds].filter((id) => id !== targetId && engine.nodes[id]?.owner === 'player');
-  const sent = engine.sendMany(sources, targetId, 0.52, 'player');
+  const sent = engine.sendMany(sources, targetId, 1, 'player');
   groupTargetMode = false;
   if (sent) {
     beep(610, 0.08);
@@ -797,26 +812,51 @@ function drawEffects() {
 }
 
 function drawDrag() {
-  for (const sourceId of dragOrder.sourceIds) {
-    const source = engine.nodes[sourceId];
-    if (!source) continue;
-    const dx = pointerWorld.x - source.x;
-    const dy = pointerWorld.y - source.y;
-    const length = Math.max(1, Math.hypot(dx, dy));
-    const bend = Math.min(70, length * 0.12) * ((source.x + source.y) % 2 ? 1 : -1);
-    const controlX = (source.x + pointerWorld.x) / 2 - dy / length * bend;
-    const controlY = (source.y + pointerWorld.y) / 2 + dx / length * bend;
-    ctx.strokeStyle = '#54f5ff';
-    ctx.globalAlpha = 0.8;
-    ctx.lineWidth = sourceId === primarySelectedId ? 3 : 2;
-    ctx.setLineDash([8, 7]);
+  const sources = dragOrder.sourceIds.map((id) => engine.nodes[id]).filter(Boolean);
+  if (!sources.length) return;
+
+  ctx.save();
+  ctx.strokeStyle = '#54f5ff';
+  ctx.shadowColor = '#54f5ff';
+  ctx.shadowBlur = 16;
+  ctx.globalAlpha = 0.92;
+  ctx.lineWidth = 3.4;
+  ctx.setLineDash([10, 7]);
+  ctx.lineDashOffset = -engine.time * 30;
+  ctx.beginPath();
+  ctx.moveTo(sources[0].x, sources[0].y);
+  for (let index = 1; index < sources.length; index += 1) ctx.lineTo(sources[index].x, sources[index].y);
+  ctx.lineTo(pointerWorld.x, pointerWorld.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
+
+  sources.forEach((source, index) => {
+    ctx.fillStyle = '#07111c';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(source.x, source.y);
-    ctx.quadraticCurveTo(controlX, controlY, pointerWorld.x, pointerWorld.y);
+    ctx.arc(source.x, source.y, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(index + 1), source.x, source.y + 0.5);
+  });
+
+  const target = engine.nodes[dragOrder.hoverTargetId];
+  if (target) {
+    const radius = NODE_TYPES[target.type].radius + 18;
+    ctx.strokeStyle = target.owner === 'player' ? '#58f2a5' : '#ff6589';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.9;
+    ctx.beginPath();
+    ctx.arc(target.x, target.y, radius, 0, Math.PI * 2);
     ctx.stroke();
   }
-  ctx.setLineDash([]);
-  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 function drawSelectionBox() {
@@ -910,7 +950,7 @@ function syncGroupControls() {
       ? 'Тапните базы или обведите рамкой'
       : count > 1
         ? `Группа: ${count} баз`
-        : 'Свободное движение';
+        : 'Цепной жест: база → база → цель';
 }
 
 function syncAbilities() {
@@ -1010,7 +1050,7 @@ window.NeonDominionQA = {
   startLevel: (id = 'awakening') => startLevel(id),
   getState: () => engine?.snapshot() || null,
   send: (from, to, ratio = 0.5) => engine?.send(from, to, ratio, 'player'),
-  sendMany: (fromIds, to, ratio = 0.5) => engine?.sendMany(fromIds, to, ratio, 'player'),
+  sendMany: (fromIds, to, ratio = 1) => engine?.sendMany(fromIds, to, ratio, 'player'),
   ability: (type, id) => engine?.useAbility(type, id),
   setSpeed: (speed) => setSpeed(speed),
   setSelection: (ids) => {
