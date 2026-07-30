@@ -11,6 +11,7 @@ on:
       - 'neon-dominion/**'
       - '.github/workflows/neon-dominion.yml'
       - 'tools/apply-neon-territory.py'
+      - 'tools/fix-neon-territory.py'
   workflow_dispatch:
 
 permissions:
@@ -29,6 +30,7 @@ jobs:
         run: |
           sed -i "s/sendMany: (fromIds, to, ratio = 0.5)/sendMany: (fromIds, to, ratio = 1)/" tools/apply-neon-territory.py
           python3 tools/apply-neon-territory.py
+          python3 tools/fix-neon-territory.py
           git checkout -- .github/workflows/pages.yml
       - name: Commit generated Territory files
         if: github.event_name == 'pull_request' && github.head_ref == 'neon-territory-v4'
