@@ -33,6 +33,7 @@ function installMapClarityStyles() {
     .city-node.open:focus text,
     .city-node.open.selected text { opacity: 1; }
     .skip-link:focus:not(:focus-visible) { transform: translateY(-160%); }
+    .build-badge { display: none; }
     .map-panel,
     .side-panel { scroll-margin-top: calc(88px + var(--safe-top)); }
     .risk-advisor {
@@ -101,6 +102,8 @@ function installTutorialCompletion() {
   } catch {}
 
   close?.addEventListener('click', complete, { once: true });
+  worldMap?.addEventListener('pointerdown', complete, { once: true, capture: true });
+  worldMap?.addEventListener('wheel', complete, { once: true, passive: true });
 
   if (routeLayer) {
     const observer = new MutationObserver(() => {
