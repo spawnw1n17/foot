@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#070912">
-  <meta name="description" content="NEON DOMINION: Arsenal — браузерная RTS с территориями, магазином, профилем игрока, коллекцией и сезонной прогрессией.">
+  <meta name="description" content="NEON DOMINION: WAR ROOM — браузерная RTS с глобальной кампанией, выживанием, боссами, строительством, редактором карт, профилем и магазином.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
@@ -13,7 +13,8 @@
   <link rel="stylesheet" href="styles-v5.css">
   <link rel="stylesheet" href="styles-v6.css">
   <link rel="stylesheet" href="styles-v6-home.css">
-  <title>NEON DOMINION — Arsenal</title>
+  <link rel="stylesheet" href="styles-v7.css">
+  <title>NEON DOMINION — WAR ROOM</title>
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -38,12 +39,12 @@
     <section class="game-layout">
       <aside class="left-panel glass" id="leftPanel">
         <div class="panel-title-row"><div><span class="eyebrow">ОПЕРАЦИЯ</span><h2 id="missionTitle">Выберите миссию</h2></div><span class="difficulty-chip" id="difficultyChip">НОРМА</span></div>
-        <p class="mission-copy" id="missionCopy">Захватывайте базы, направляя силы по свободным траекториям в любую точку сети.</p>
+        <p class="mission-copy" id="missionCopy">Захватывайте базы, стройте объекты и управляйте маршрутами в реальном времени.</p>
         <div class="objective-list" id="objectiveList"></div>
         <div class="selected-card" id="selectedCard"><div class="selected-empty">Выберите базу или группу</div></div>
         <div class="hint-card">
-          <span>ЦЕПНОЙ МАРШРУТ</span>
-          <p>Зажмите свою базу, проведите через другие источники, затем через одну или несколько целей. Выжившие силы продолжат маршрут; базы отправят весь гарнизон и начнут новый набор.</p>
+          <span>WAR ROOM</span>
+          <p>Используйте свободные точки маршрута, строительство, возврат колонн и тактическую паузу. Цепной жест по-прежнему отправляет весь гарнизон.</p>
         </div>
       </aside>
 
@@ -86,9 +87,9 @@
   <div class="overlay visible" id="homeOverlay">
     <div class="home-card glass">
       <div class="home-hero">
-        <div class="hero-badge">ARSENAL UPDATE</div>
-        <h2>СОЗДАЙ<br><span>СВОЮ ИМПЕРИЮ</span></h2>
-        <p>Профиль игрока, магазин, командиры, коллекция, ежедневные задания, достижения и бесплатный сезонный пропуск.</p>
+        <div class="hero-badge">WAR ROOM UPDATE</div>
+        <h2>КОМАНДУЙ<br><span>ВСЕЙ ВОЙНОЙ</span></h2>
+        <p>Глобальная карта, новые условия победы, выживание, многофазные боссы, строительство, ручные маршруты, редактор операций и расширенный профиль.</p>
         <button class="primary-btn" id="campaignBtn">НАЧАТЬ КАМПАНИЮ <span>→</span></button>
         <button class="secondary-btn" id="quickBtn">БЫСТРАЯ БИТВА</button>
       </div>

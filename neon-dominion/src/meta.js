@@ -1,3 +1,4 @@
+import { SHOP_BUNDLES } from './war-room-core.js';
 const STORAGE_KEY = 'neon-dominion-arsenal-v1';
 const DAY = 86_400_000;
 
@@ -268,6 +269,8 @@ export class MetaController {
     this.state = this.load();
     this.activeTab = 'profile';
     this.shopFilter = 'all';
+    this.previewEquipped = null;
+    this.previewUntil = 0;
     this.buildUI();
     this.applyTheme();
     this.refresh();
@@ -378,8 +381,14 @@ export class MetaController {
     this.chip.innerHTML = `<i>${avatar.glyph}</i><span><b>${escapeHtml(this.state.name)}</b><small>УР. ${level.level} · ${rank.name}</small></span><em>${this.state.credits}</em>`;
   }
 
+  effectiveEquipped(type) {
+    if (this.previewEquipped && Date.now() < this.previewUntil && this.previewEquipped.type === type) return this.previewEquipped.id;
+    if (this.previewEquipped && Date.now() >= this.previewUntil) this.previewEquipped = null;
+    return this.state.equipped[type];
+  }
+
   applyTheme() {
-    const theme = (this.state.equipped.theme || 'theme-neon').replace('theme-', '');
+    const theme = (this.effectiveEquipped('theme') || 'theme-neon').replace('theme-', '');
     document.body.dataset.arsenalTheme = theme;
   }
 
@@ -563,6 +572,44 @@ export class MetaController {
     this.render();
   }
 
+  purchaseBundle(id) {
+    const bundle = SHOP_BUNDLES.find((entry) => entry.id === id);
+    if (!bundle) return { ok: false, reason: 'missing' };
+    const items = bundle.items.map((itemId) => CATALOG.find((item) => item.id === itemId)).filter(Boolean);
+    const missing = items.filter((item) => !this.state.owned.includes(item.id));
+    if (!missing.length) return { ok: false, reason: 'owned' };
+    const totals = missing.reduce((sum, item) => {
+      sum[item.currency] += item.price;
+      return sum;
+    }, { credits: 0, shards: 0 });
+    totals.credits = Math.ceil(totals.credits * (1 - bundle.discount / 100));
+    totals.shards = Math.ceil(totals.shards * (1 - bundle.discount / 100));
+    if (this.state.credits < totals.credits || this.state.shards < totals.shards) return { ok: false, reason: 'funds', totals };
+    this.state.credits -= totals.credits;
+    this.state.shards -= totals.shards;
+    missing.forEach((item) => this.state.owned.push(item.id));
+    this.save();
+    this.toast(`${bundle.name}: комплект приобретён`, 'good');
+    this.render();
+    return { ok: true, bundle, totals, items: missing };
+  }
+
+  previewItem(id, duration = 30_000) {
+    const item = CATALOG.find((entry) => entry.id === id);
+    if (!item || !['base', 'trail', 'theme'].includes(item.type)) return false;
+    this.previewEquipped = item;
+    this.previewUntil = Date.now() + Math.max(1000, duration);
+    this.applyTheme();
+    this.toast(`${item.name}: предпросмотр активирован`, 'good');
+    return true;
+  }
+
+  clearPreview() {
+    this.previewEquipped = null;
+    this.previewUntil = 0;
+    this.applyTheme();
+  }
+
   claimTask(kind, id) {
     const bucket = this.state[kind];
     const task = bucket?.tasks.find((entry) => entry.id === id);
@@ -643,7 +690,7 @@ export class MetaController {
 
   decorateBase(ctx, node, config, faction, now) {
     if (node.owner !== 'player') return;
-    const skin = CATALOG.find((item) => item.id === this.state.equipped.base) || CATALOG[0];
+    const skin = CATALOG.find((item) => item.id === this.effectiveEquipped('base')) || CATALOG[0];
     const accent = skin.accent || skin.preview || faction.color;
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
@@ -665,7 +712,7 @@ export class MetaController {
 
   decorateConvoy(ctx, convoy, geometry) {
     if (convoy.owner !== 'player') return;
-    const trail = CATALOG.find((item) => item.id === this.state.equipped.trail) || CATALOG.find((item) => item.id === 'trail-cyan');
+    const trail = CATALOG.find((item) => item.id === this.effectiveEquipped('trail')) || CATALOG.find((item) => item.id === 'trail-cyan');
     const color = trail.preview || '#54f5ff';
     ctx.save();
     ctx.strokeStyle = color;
@@ -684,7 +731,7 @@ export class MetaController {
 
   snapshot() {
     const { level, rank } = this.profileInfo();
-    return { ...clone(this.state), level, rank, activeTab: this.activeTab };
+    return { ...clone(this.state), level, rank, activeTab: this.activeTab, preview: this.previewEquipped ? { ...this.previewEquipped, until: this.previewUntil } : null };
   }
 
   resetForQA() {

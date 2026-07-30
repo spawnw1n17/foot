@@ -1,7 +1,8 @@
-import { MAPS, getMap, FACTIONS, NODE_TYPES } from './maps.js';
+import { MAPS, getMap, cloneMap, FACTIONS, NODE_TYPES } from './maps.js';
 import { DominionEngine } from './engine.js';
 import { TerritoryController } from './territory.js';
 import { MetaController } from './meta.js';
+import { WarRoomController } from './war-room.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -53,6 +54,7 @@ const visualAssets = {
 
 let engine = null;
 let currentMap = null;
+let currentLaunchOptions = {};
 let selectedIds = new Set();
 let primarySelectedId = null;
 let dragOrder = null;
@@ -95,6 +97,25 @@ const territory = new TerritoryController({
 const meta = new MetaController({
   notice: (text, type = '') => notice(text, type),
   onChange: () => {},
+});
+const warRoom = new WarRoomController({
+  getEngine: () => engine,
+  getMap: () => currentMap,
+  getMeta: () => meta.snapshot(),
+  getSelected: () => [...selectedIds],
+  getUnit: () => territory.unitType,
+  startLevel: (id, options = {}) => startLevel(id, options),
+  startCustomMap: (map, options = {}) => startLevel(map.id, { ...options, map }),
+  goHome: () => goHome(),
+  setSpeed: (speed) => setSpeed(speed),
+  openMeta: (tab) => meta.open(tab),
+  previewItem: (id, duration) => meta.previewItem(id, duration),
+  buyBundle: (id) => meta.purchaseBundle(id),
+  notice: (text, type = '') => notice(text, type),
+  beep: (frequency, duration) => beep(frequency, duration),
+  canvas,
+  screenToWorld,
+  hitNode,
 });
 const particles = Array.from({ length: 96 }, (_, index) => ({
   x: (index * 137) % 1200,
@@ -145,7 +166,7 @@ function bindUI() {
   };
   $('#resumeBtn').onclick = () => resume();
   $('#exitBtn').onclick = () => goHome();
-  $('#retryBtn').onclick = () => startLevel(currentMap.id);
+  $('#retryBtn').onclick = () => startLevel(currentMap.id, { ...currentLaunchOptions, map: currentLaunchOptions.map ? cloneMap(currentLaunchOptions.map) : undefined });
   $('#nextBtn').onclick = () => {
     const next = MAPS[currentMap.order] || null;
     next ? startLevel(next.id) : goHome();
@@ -215,14 +236,18 @@ function firstUnlocked() {
 }
 
 function startLevel(id, options = {}) {
-  currentMap = getMap(id);
+  currentLaunchOptions = { ...options, map: options.map ? cloneMap(options.map) : undefined };
+  currentMap = options.map ? cloneMap(options.map) : getMap(id);
   engine = new DominionEngine(currentMap, {
-    difficulty: currentMap.order < 2 ? 0.75 : currentMap.order < 4 ? 1.05 : 1.35,
-    seed: options.quick ? Date.now() : undefined,
+    difficulty: options.difficulty || (currentMap.order < 2 ? 0.75 : currentMap.order < 4 ? 1.05 : 1.35),
+    seed: options.seed || currentMap.seed || (options.quick ? Date.now() : undefined),
+    mode: options.mode || currentMap.warMode || 'conquest',
+    aiPersonalities: options.aiPersonalities,
   });
   selectedIds = new Set(engine.factionNodes('player').slice(0, 1).map((node) => node.id));
   territory.start(engine);
   const activeCommander = meta.beginBattle(engine);
+  warRoom.onBattleStart(engine, currentMap, options);
   primarySelectedId = [...selectedIds][0] || null;
   selectedSignature = '';
   barsSignature = '';
@@ -257,6 +282,7 @@ function goHome() {
   currentMap = null;
   territory.stop();
   meta.refresh();
+  warRoom.onHome();
   selectedIds.clear();
   primarySelectedId = null;
   dom.pause.classList.remove('visible');
@@ -362,6 +388,7 @@ function pointerDown(event) {
   pointerWorld = world;
   const hit = hitNode(world);
 
+  if (warRoom.pointerDown(event, world, hit)) return;
   if (territory.pointerDown(event, hit)) return;
 
   if (pointers.size === 2) {
@@ -445,6 +472,7 @@ function pointerMove(event) {
   }
 
   pointerWorld = screenToWorld(event.clientX, event.clientY);
+  if (warRoom.pointerMove(event, pointerWorld)) return;
   if (territory.pointerMove(event, pointerWorld)) return;
   if (selectionBox) {
     selectionBox.end = pointerWorld;
@@ -492,6 +520,9 @@ function pointerUp(event) {
   const world = screenToWorld(event.clientX, event.clientY);
   const target = hitNode(world);
 
+  if (warRoom.pointerUp(event, world, target)) {
+    dragOrder = null; pan = null; pinch = null; pointers.delete(event.pointerId); dom.dragLabel.style.display = 'none'; return;
+  }
   if (territory.pointerUp(event, target)) {
     dragOrder = null;
     pan = null;
@@ -613,6 +644,7 @@ function loop(now) {
   last = now;
   if (engine) {
     engine.update(dt);
+    warRoom.update(dt, now);
     if (now - lastUI > 220) {
       syncUI();
       lastUI = now;
@@ -642,6 +674,7 @@ function render(now) {
     drawNodes(now);
     drawEffects();
     territory.drawOverlay(ctx, now);
+    warRoom.draw(ctx, now);
     if (dragOrder?.moved && pointerWorld) drawDrag();
     if (selectionBox) drawSelectionBox();
   }
@@ -700,11 +733,23 @@ function drawNodes(now) {
     const selected = selectedIds.has(node.id);
     const primary = node.id === primarySelectedId;
     const pulse = 1 + Math.sin(now * 0.003 + node.x) * 0.018;
-    const asset = visualAssets.bases[node.type];
+    const asset = visualAssets.bases[node.type] || visualAssets.bases.core;
 
     ctx.save();
     ctx.translate(node.x, node.y);
     ctx.scale(pulse * portraitBoost, pulse * portraitBoost * aspectFix);
+
+    if (node.virtual) {
+      ctx.strokeStyle = '#ffd66b';
+      ctx.fillStyle = 'rgba(7,12,22,.92)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffd66b'; ctx.font = '900 7px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('•', 0, 0);
+      ctx.restore();
+      continue;
+    }
 
     const aura = ctx.createRadialGradient(0, 0, 4, 0, 0, config.radius + 28);
     aura.addColorStop(0, `${faction.color}42`);
@@ -1055,7 +1100,8 @@ function showResult() {
   dom.resultStats.innerHTML = `<div class="result-stat"><span>ВРЕМЯ</span><strong>${formatTime(engine.time)}</strong></div>
     <div class="result-stat"><span>ЗАХВАЧЕНО</span><strong>${engine.stats.captured}</strong></div>
     <div class="result-stat"><span>ГРУППОВЫЕ</span><strong>${engine.stats.groupOrders}</strong></div>`;
-  if (victory) {
+  const isCampaignMap = MAPS.some((map) => map.id === currentMap.id) && !currentLaunchOptions.warRoom && !currentMap.custom && !currentMap.dailyKey && !currentMap.sandbox;
+  if (victory && isCampaignMap) {
     profile.completed[currentMap.id] = Math.max(profile.completed[currentMap.id] || 0, stars);
     saveProfile();
     beep(820, 0.25);
@@ -1063,6 +1109,7 @@ function showResult() {
     beep(100, 0.28);
   }
   const totalStars = Object.values(profile.completed).reduce((sum, value) => sum + value, 0);
+  const warResult = warRoom.onBattleEnd({ victory, stars, totalStars });
   const reward = meta.completeBattle({
     victory,
     stars,
@@ -1074,6 +1121,7 @@ function showResult() {
     longestChain: engine.stats.chainedRoutes,
   });
   dom.resultStats.insertAdjacentHTML('beforeend', `<div class="result-reward"><span>НАГРАДА ПРОФИЛЯ</span><b>◈ ${reward.credits}</b><b>✦ ${reward.shards}</b><b>${reward.xp} XP</b></div>`);
+  if (warResult) dom.resultStats.insertAdjacentHTML('beforeend', `<div class="result-reward war-result-reward"><span>WAR ROOM</span><b>${warResult.mode.toUpperCase()}</b><b>${warResult.bossDefeated ? 'БОСС ПОБЕЖДЁН' : `ТЕРРИТОРИЯ ${Math.round(warResult.territory * 100)}%`}</b></div>`);
   dom.result.classList.add('visible');
 }
 
@@ -1135,6 +1183,23 @@ window.NeonDominionQA = {
   equipMeta: (id) => meta.equip(id),
   chooseCommander: (id) => meta.chooseCommander(id),
   completeMetaBattle: (battle) => meta.completeBattle(battle),
+  getWarRoom: () => warRoom.snapshot(),
+  resetWarRoom: () => warRoom.resetForQA(),
+  openWarRoom: (tab = 'world') => warRoom.open(tab),
+  closeWarRoom: () => warRoom.close(),
+  startWarMap: (map, options = {}) => startLevel(map.id, { ...options, map, warRoom: true }),
+  startWarLevel: (id, options = {}) => startLevel(id, { ...options, warRoom: true }),
+  buildNode: (type, x, y) => engine?.buildNode(type, x, y),
+  addWaypoint: (x, y) => engine?.addWaypoint(x, y),
+  sendWaypointRoute: (fromIds, points, targetId, options = {}) => engine?.sendWaypointRoute(fromIds, points, targetId, options),
+  retargetConvoy: (id, target, route = []) => engine?.retargetConvoy(id, target, route),
+  recallConvoy: (id) => engine?.recallConvoy(id),
+  splitConvoy: (id, target, ratio = .5) => engine?.splitConvoy(id, target, ratio),
+  mergeConvoys: (ids) => engine?.mergeConvoys(ids),
+  holdConvoy: (id, held = null) => engine?.toggleConvoyHold(id, held),
+  patrolConvoy: (id, targets) => engine?.patrolConvoy(id, targets),
+  previewMetaItem: (id, duration = 30000) => meta.previewItem(id, duration),
+  buyMetaBundle: (id) => meta.purchaseBundle(id),
   assetsReady: () => visualAssets.background.complete
     && visualAssets.background.naturalWidth > 0
     && Object.values(visualAssets.bases).every((image) => image.complete && image.naturalWidth > 0),
