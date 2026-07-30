@@ -282,7 +282,9 @@ export class DominionEngine {
         if (this.encounters.has(key)) continue;
         const pointA = this.convoyPoint(a);
         const pointB = this.convoyPoint(b);
-        if (distance(pointA, pointB) > 22) continue;
+        const reversedRoute = a.from === b.to && a.to === b.from;
+        const interceptRadius = reversedRoute ? 92 : 30;
+        if (distance(pointA, pointB) > interceptRadius) continue;
         this.encounters.add(key);
         const beforeA = a.amount;
         const beforeB = b.amount;
