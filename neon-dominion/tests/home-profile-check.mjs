@@ -28,18 +28,19 @@ async function desktop() {
   const meta = await page.evaluate(() => window.NeonDominionQA.getMeta());
   const name = (await page.locator('.home-profile-copy > strong').textContent()).trim();
   assert.equal(name, meta.name);
+  const dockBox = await page.locator('#homeProfileDock').boundingBox();
+  const cardBox = await page.locator('#homeOverlay .home-card').boundingBox();
+  assert.ok(dockBox.width <= cardBox.width + 1);
+  await page.screenshot({ path: `${output}/desktop-home-profile.png` });
+
   await page.locator('#homeProfileDock [data-home-tab="shop"]').first().click();
   await page.waitForFunction(() => document.querySelector('#arsenalOverlay')?.classList.contains('visible'));
   assert.equal(await page.locator('#arsenalNav [data-meta-tab="shop"].active').count(), 1);
   await page.locator('#arsenalClose').click();
   await page.waitForFunction(() => !document.querySelector('#arsenalOverlay')?.classList.contains('visible'));
-
-  const dockBox = await page.locator('#homeProfileDock').boundingBox();
-  const cardBox = await page.locator('#homeOverlay .home-card').boundingBox();
-  assert.ok(dockBox.width <= cardBox.width + 1);
+  await page.waitForTimeout(300);
   assert.equal(errors.length, 0);
   report.desktop = { name, level: meta.level.level, rank: meta.rank.name, dock: dockBox, card: cardBox, errors };
-  await page.screenshot({ path: `${output}/desktop-home-profile.png`, fullPage: true });
   await page.close();
 }
 
@@ -60,14 +61,16 @@ async function mobile() {
   assert.ok(dimensions.scroll <= dimensions.client + 1);
   assert.equal(dimensions.actions, 5);
   assert.ok(dimensions.dock.width <= 390);
+  await page.screenshot({ path: `${output}/mobile-home-profile.png` });
 
   await page.locator('#homeProfileDock [data-home-tab="profile"]').first().tap();
   await page.waitForFunction(() => document.querySelector('#arsenalOverlay')?.classList.contains('visible'));
   assert.equal(await page.locator('#arsenalNav [data-meta-tab="profile"].active').count(), 1);
   await page.locator('#arsenalClose').tap();
+  await page.waitForFunction(() => !document.querySelector('#arsenalOverlay')?.classList.contains('visible'));
+  await page.waitForTimeout(300);
   assert.equal(errors.length, 0);
   report.mobile = { width: `${dimensions.scroll}/${dimensions.client}`, dock: dimensions.dock, actions: dimensions.actions, errors };
-  await page.screenshot({ path: `${output}/mobile-home-profile.png` });
   await context.close();
 }
 
