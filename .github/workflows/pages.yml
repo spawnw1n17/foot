@@ -27,13 +27,18 @@ jobs:
         run: npm run check
       - name: Validate AeroSphere
         run: |
+          set -e
           cd world-air-network
           npm run check
-          node --check src/polish.js
-          node --check src/route-guard.js
-          node --check sw.js
+          for file in src/polish.js src/route-guard.js src/gesture-controls.js src/command-bridge.js sw.js; do
+            node --check "$file"
+          done
           test -s polish.css
           grep -q "installRiskAdvisor" src/route-guard.js
+          grep -q "installOriginalStyleMapControls" src/gesture-controls.js
+          grep -q "route-drag-preview" src/gesture-controls.js
+          grep -q "installCommandApi" src/game.js
+          grep -q "AeroSphereGame" src/command-bridge.js
       - name: Validate UAV simulator
         run: |
           set -e
@@ -96,10 +101,13 @@ jobs:
           set -e
           BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network"
           curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --max-time 20 "$BASE/" | grep -q "AeroSphere"
-          for asset in styles.css polish.css src/data.js src/engine.js src/game.js src/polish.js src/route-guard.js sw.js manifest.webmanifest assets/icon.svg; do
+          for asset in styles.css polish.css src/data.js src/engine.js src/game.js src/polish.js src/gesture-controls.js src/command-bridge.js src/route-guard.js sw.js manifest.webmanifest assets/icon.svg; do
             curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/$asset" >/dev/null
           done
           curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/route-guard.js" | grep -q "installRiskAdvisor"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/gesture-controls.js" | grep -q "route-drag-preview"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/game.js" | grep -q "installCommandApi"
+          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/command-bridge.js" | grep -q "AeroSphereGame"
           echo "Verified AeroSphere: $BASE/"
 
       - name: Open published games in Chromium
@@ -146,6 +154,7 @@ jobs:
           grep -q 'id="worldMap"' "$RUNNER_TEMP/aerosphere-dom.html"
           grep -q 'id="moneyStat"' "$RUNNER_TEMP/aerosphere-dom.html"
           grep -q 'id="citySearch"' "$RUNNER_TEMP/aerosphere-dom.html"
+          grep -q 'gesture-layer' "$RUNNER_TEMP/aerosphere-dom.html"
           grep -q 'risk-advisor' "$RUNNER_TEMP/aerosphere-dom.html"
           "$CHROME" \
             --headless=new \

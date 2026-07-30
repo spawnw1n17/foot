@@ -53,12 +53,16 @@ async function runDesktopScenario() {
     cityCount: document.querySelectorAll('#cityLayer [data-city-id]').length,
     routeCount: document.querySelectorAll('#routeLayer [data-route-id]').length,
     searchReady: Boolean(document.querySelector('#citySearch')),
+    gestureLayerReady: Boolean(document.querySelector('.gesture-layer')),
+    commandApiReady: Boolean(window.AeroSphereGame),
     qaReady: Boolean(window.__AEROSPHERE_QA__),
     runtimeErrors: document.documentElement.dataset.runtimeErrors || null
   }));
   assert.equal(startup.cityCount, 40, 'На карте должны отображаться 40 городов');
   assert.equal(startup.routeCount, 2, 'Новая игра должна начинаться с двух маршрутов');
   assert.equal(startup.searchReady, true, 'Поиск города должен быть подключён');
+  assert.equal(startup.gestureLayerReady, true, 'Слой перетаскивания должен быть подключён');
+  assert.equal(startup.commandApiReady, true, 'Прямой API игрового движка должен быть подключён');
   assert.equal(startup.qaReady, true, 'QA-телеметрия должна быть подключена');
   assert.equal(startup.runtimeErrors, null, 'Не должно быть ошибок рантайма');
 
@@ -73,13 +77,32 @@ async function runDesktopScenario() {
 
   await page.locator('[data-zoom="fit"]').click();
   assert.equal(Number(await page.locator('#worldMap').getAttribute('data-zoom')), 1, 'Полный вид должен сбрасывать масштаб');
-  await clickCityOnMap(page, 'moscow');
-  await page.waitForFunction(() => document.querySelector('#sideContent .panel-title')?.textContent?.includes('Москва'));
-  await page.locator('[data-action="start-route"][data-city-id="moscow"]').click();
-  await clickCityOnMap(page, 'minsk');
+
+  await dragCityToCity(page, 'moscow', 'minsk');
   await page.locator('#confirmModal:not(.hidden)').waitFor();
   await page.locator('#modalConfirm').click();
   await page.waitForFunction(() => document.querySelectorAll('#routeLayer [data-route-id]').length === 3);
+
+  await clickCityOnMap(page, 'moscow');
+  await page.waitForFunction(() => document.querySelector('#sideContent .panel-title')?.textContent?.includes('Москва'));
+
+  const map = page.locator('#worldMap');
+  const mapBox = await map.boundingBox();
+  assert.ok(mapBox, 'Карта должна иметь экранные координаты');
+  await page.mouse.move(mapBox.x + mapBox.width * 0.45, mapBox.y + mapBox.height * 0.55);
+  await page.mouse.wheel(0, -360);
+  await page.waitForTimeout(180);
+  const wheelZoom = Number(await map.getAttribute('data-zoom'));
+  assert.ok(wheelZoom > 1.2, `Колесо без Ctrl должно увеличивать карту: ${wheelZoom}`);
+
+  const beforePan = await map.getAttribute('viewBox');
+  await dragMap(page, 0.43, 0.68, 105, -48);
+  await page.waitForTimeout(350);
+  const afterPan = await map.getAttribute('viewBox');
+  assert.notEqual(afterPan, beforePan, 'Обычное перетаскивание должно двигать увеличенную карту');
+
+  await page.locator('[data-zoom="fit"]').click();
+  assert.equal(Number(await map.getAttribute('data-zoom')), 1, 'Кнопка полного вида должна возвращать масштаб 1');
 
   await page.locator('[data-speed="4"]').click();
   await page.waitForTimeout(1800);
@@ -94,27 +117,26 @@ async function runDesktopScenario() {
   await page.locator('[data-tab="objectives"]').click();
   assert.equal(await page.locator('.objective-card').count(), 5, 'Должны отображаться все цели');
 
-  await page.locator('[data-zoom="in"]').click();
-  const zoom = Number(await page.locator('#worldMap').getAttribute('data-zoom'));
-  assert.ok(zoom > 1, 'Кнопка увеличения должна менять масштаб карты');
-  await page.locator('[data-zoom="fit"]').click();
-
   await page.locator('#saveButton').click();
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('aerosphere-save-v1') || 'null'));
   assert.ok(saved, 'Сохранение должно появиться в localStorage');
   assert.ok(saved.airports.minsk, 'Открытый аэропорт должен сохраняться');
-  assert.ok(saved.routes.some((route) => route.id === 'minsk__moscow'), 'Новый маршрут должен сохраняться');
+  assert.ok(saved.routes.some((route) => route.id === 'minsk__moscow'), 'Маршрут, созданный перетаскиванием, должен сохраняться');
 
   const qa = await page.evaluate(() => window.__AEROSPHERE_QA__);
   assert.equal(qa.errors.length, 0, 'Встроенная телеметрия не должна содержать ошибок');
   assert.equal(qa.cityCount, 40);
   assert.equal(qa.routeCount, 3);
+  assert.ok(qa.gestures?.routeDrag >= 1, 'Телеметрия должна подтвердить создание маршрута перетаскиванием');
+  assert.ok(qa.gestures?.pan >= 1, 'Телеметрия должна подтвердить перетаскивание карты');
+  assert.ok(qa.gestures?.zoom >= 1, 'Телеметрия должна подтвердить масштабирование колесом');
   assert.equal(qa.documentOverflow, false, 'На десктопе не должно быть горизонтального переполнения документа');
 
   await page.screenshot({ path: `${outputDir}/desktop-final.png`, fullPage: true });
   report.desktop = {
     cityCount: qa.cityCount,
     routeCount: qa.routeCount,
+    gestures: qa.gestures,
     zoom: qa.zoom,
     savedMoney: saved.money,
     savedAirports: Object.keys(saved.airports).length,
@@ -140,13 +162,26 @@ async function runMobileScenario() {
     scrollWidth: document.documentElement.scrollWidth,
     mapHeight: Math.round(document.querySelector('#worldMap')?.getBoundingClientRect().height || 0),
     quickNavVisible: getComputedStyle(document.querySelector('.mobile-quick-nav')).display !== 'none',
+    touchActionFit: getComputedStyle(document.querySelector('#worldMap')).touchAction,
     errors: window.__AEROSPHERE_QA__.errors
   }));
 
   assert.ok(layout.scrollWidth <= layout.innerWidth + 2, `Мобильная страница не должна расширяться: ${layout.scrollWidth} > ${layout.innerWidth}`);
   assert.ok(layout.mapHeight >= 300 && layout.mapHeight <= 520, `Высота мобильной карты должна быть удобной: ${layout.mapHeight}`);
   assert.equal(layout.quickNavVisible, true, 'На мобильном размере должна отображаться быстрая навигация');
+  assert.ok(layout.touchActionFit.includes('pan-y'), `При полном виде карта должна разрешать вертикальную прокрутку страницы: ${layout.touchActionFit}`);
   assert.deepEqual(layout.errors, []);
+
+  await page.locator('[data-zoom="in"]').click();
+  const mobileMap = page.locator('#worldMap');
+  const mobileBeforePan = await mobileMap.getAttribute('viewBox');
+  const zoomedTouchAction = await mobileMap.evaluate((node) => getComputedStyle(node).touchAction);
+  assert.equal(zoomedTouchAction, 'none', 'После увеличения карта должна перехватывать жест перетаскивания');
+  await dragMapTouch(context, page, 0.55, 0.62, -72, 35);
+  await page.waitForTimeout(280);
+  const mobileAfterPan = await mobileMap.getAttribute('viewBox');
+  assert.notEqual(mobileAfterPan, mobileBeforePan, 'Перетаскивание должно работать и в мобильной раскладке');
+  await page.locator('[data-zoom="fit"]').click();
 
   await page.locator('.mobile-quick-nav [data-jump="control"]').click();
   await page.waitForTimeout(500);
@@ -159,13 +194,69 @@ async function runMobileScenario() {
   await page.locator('.mobile-quick-nav [data-jump="map"]').click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${outputDir}/mobile-final.png`, fullPage: true });
-  report.mobile = layout;
+  report.mobile = {
+    ...layout,
+    gestures: await page.evaluate(() => window.__AEROSPHERE_QA__.gestures || {})
+  };
 
   activePage = null;
   await context.close();
 }
 
 async function clickCityOnMap(page, cityId) {
+  const point = await cityScreenPoint(page, cityId);
+  await page.mouse.click(point.x, point.y);
+}
+
+async function dragCityToCity(page, sourceId, targetId) {
+  const source = await cityScreenPoint(page, sourceId);
+  const target = await cityScreenPoint(page, targetId);
+  await page.mouse.move(source.x, source.y);
+  await page.mouse.down();
+  await page.mouse.move((source.x + target.x) / 2, (source.y + target.y) / 2, { steps: 8 });
+  await page.mouse.move(target.x, target.y, { steps: 8 });
+  await page.mouse.up();
+}
+
+async function dragMapTouch(context, page, xRatio, yRatio, deltaX, deltaY) {
+  const box = await page.locator('#worldMap').boundingBox();
+  assert.ok(box, 'Карта должна иметь экранные координаты для сенсорного перетаскивания');
+  const startX = box.x + box.width * xRatio;
+  const startY = box.y + box.height * yRatio;
+  const session = await context.newCDPSession(page);
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: startX, y: startY, radiusX: 5, radiusY: 5, force: 1, id: 1 }]
+  });
+  for (let step = 1; step <= 12; step += 1) {
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{
+        x: startX + deltaX * (step / 12),
+        y: startY + deltaY * (step / 12),
+        radiusX: 5,
+        radiusY: 5,
+        force: 1,
+        id: 1
+      }]
+    });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await session.detach();
+}
+
+async function dragMap(page, xRatio, yRatio, deltaX, deltaY) {
+  const box = await page.locator('#worldMap').boundingBox();
+  assert.ok(box, 'Карта должна иметь экранные координаты для перетаскивания');
+  const startX = box.x + box.width * xRatio;
+  const startY = box.y + box.height * yRatio;
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX + deltaX, startY + deltaY, { steps: 12 });
+  await page.mouse.up();
+}
+
+async function cityScreenPoint(page, cityId) {
   const node = page.locator(`#cityLayer [data-city-id="${cityId}"]`);
   const point = await node.evaluate((element) => {
     const matrix = element.getScreenCTM();
@@ -174,7 +265,7 @@ async function clickCityOnMap(page, cityId) {
     return { x: center.x, y: center.y };
   });
   assert.ok(point, `Город ${cityId} должен иметь экранные координаты`);
-  await page.mouse.click(point.x, point.y);
+  return point;
 }
 
 function attachDiagnostics(page, label) {

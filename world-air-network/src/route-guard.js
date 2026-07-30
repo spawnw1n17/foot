@@ -1,5 +1,7 @@
+import './command-bridge.js';
 import { CITY_CATALOG } from './data.js';
 import { projectCity } from './engine.js';
+import { dispatchGestureClick, installOriginalStyleMapControls } from './gesture-controls.js';
 
 const worldMap = document.querySelector('#worldMap');
 const cityPoints = CITY_CATALOG.map((city) => ({ ...projectCity(city), id: city.id }));
@@ -11,6 +13,7 @@ installMapClarityStyles();
 installTutorialCompletion();
 installPointerFocusCleanup();
 installRiskAdvisor();
+installOriginalStyleMapControls({ worldMap, cityPoints, cityNames, activateCity });
 
 if (worldMap) {
   worldMap.addEventListener('click', prioritizeCityAtMapPoint, true);
@@ -30,6 +33,7 @@ function installMapClarityStyles() {
     .city-node.open:focus text,
     .city-node.open.selected text { opacity: 1; }
     .skip-link:focus:not(:focus-visible) { transform: translateY(-160%); }
+    .build-badge { display: none; }
     .map-panel,
     .side-panel { scroll-margin-top: calc(88px + var(--safe-top)); }
     .risk-advisor {
@@ -93,11 +97,25 @@ function installTutorialCompletion() {
     try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
   };
 
+  const completeOnMapPointer = (event) => {
+    if (!event.composedPath?.().includes(worldMap)) return;
+    complete();
+    window.removeEventListener('pointerdown', completeOnMapPointer, true);
+  };
+
+  const completeOnMapWheel = (event) => {
+    if (!event.composedPath?.().includes(worldMap)) return;
+    complete();
+    window.removeEventListener('wheel', completeOnMapWheel, true);
+  };
+
   try {
     if (localStorage.getItem(TUTORIAL_KEY) === '1') card.classList.add('hidden');
   } catch {}
 
   close?.addEventListener('click', complete, { once: true });
+  window.addEventListener('pointerdown', completeOnMapPointer, true);
+  window.addEventListener('wheel', completeOnMapWheel, { capture: true, passive: true });
 
   if (routeLayer) {
     const observer = new MutationObserver(() => {
@@ -202,10 +220,11 @@ function prioritizeCityAtMapPoint(event) {
 }
 
 function activateCity(cityId) {
+  if (window.AeroSphereCommands?.selectCity(cityId)) return;
   const clickCurrentNode = () => {
     const node = worldMap.querySelector(`[data-city-id="${CSS.escape(cityId)}"]`);
     if (!node) return false;
-    node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    dispatchGestureClick(node);
     node.focus?.({ preventScroll: true });
     return true;
   };
