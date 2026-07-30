@@ -38,7 +38,7 @@ jobs:
           done
           grep -q "WAR ROOM UPDATE" index.html
           grep -q "styles-v7.css" index.html
-          grep -q "war-room.js" index.html
+          grep -q "WarRoomController" src/game.js
           grep -q "WarRoomController" src/war-room.js
           grep -q "WORLD_REGIONS" src/war-room-core.js
           grep -q "buildNode" src/engine.js
