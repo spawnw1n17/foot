@@ -1,20 +1,9 @@
-const CACHE = 'neon-dominion-v3';
+const CACHE = 'neon-dominion-v4';
 const FILES = [
-  './',
-  './index.html',
-  './styles.css',
-  './styles-v2.css',
-  './manifest.webmanifest',
-  './assets/icon.svg',
-  './assets/arena-background.svg',
-  './assets/base-core.svg',
-  './assets/base-factory.svg',
-  './assets/base-fortress.svg',
-  './assets/base-relay.svg',
-  './assets/base-reactor.svg',
-  './src/maps.js',
-  './src/engine.js',
-  './src/game.js',
+  './', './index.html', './styles.css', './styles-v2.css', './styles-v4.css', './manifest.webmanifest',
+  './assets/icon.svg', './assets/arena-background.svg', './assets/base-core.svg', './assets/base-factory.svg',
+  './assets/base-fortress.svg', './assets/base-relay.svg', './assets/base-reactor.svg',
+  './src/maps.js', './src/engine.js', './src/territory.js', './src/game.js',
 ];
 self.addEventListener('install', (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))).then(() => self.clients.claim())));

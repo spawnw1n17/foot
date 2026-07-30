@@ -1,5 +1,6 @@
 import { MAPS, getMap, FACTIONS, NODE_TYPES } from './maps.js';
 import { DominionEngine } from './engine.js';
+import { TerritoryController } from './territory.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -73,6 +74,23 @@ let pan = null;
 let pinch = null;
 const pointers = new Map();
 const profile = loadProfile();
+const territory = new TerritoryController({
+  canvas,
+  ctx,
+  dragLabel: dom.dragLabel,
+  getEngine: () => engine,
+  screenToWorld,
+  hitNode,
+  allowChain: () => !selectionMode && !groupTargetMode && !armedAbility,
+  getSelected: () => [...selectedIds],
+  setSelected: (ids, primary) => {
+    selectedIds = new Set(ids.filter((id) => engine?.nodes[id]?.owner === 'player'));
+    primarySelectedId = primary || [...selectedIds][0] || null;
+    selectedSignature = '';
+    syncSelected(true);
+    syncGroupControls();
+  },
+});
 const particles = Array.from({ length: 96 }, (_, index) => ({
   x: (index * 137) % 1200,
   y: (index * 251) % 720,
@@ -198,6 +216,7 @@ function startLevel(id, options = {}) {
     seed: options.quick ? Date.now() : undefined,
   });
   selectedIds = new Set(engine.factionNodes('player').slice(0, 1).map((node) => node.id));
+  territory.start(engine);
   primarySelectedId = [...selectedIds][0] || null;
   selectedSignature = '';
   barsSignature = '';
@@ -229,6 +248,7 @@ function startLevel(id, options = {}) {
 function goHome() {
   engine = null;
   currentMap = null;
+  territory.stop();
   selectedIds.clear();
   primarySelectedId = null;
   dom.pause.classList.remove('visible');
@@ -334,6 +354,8 @@ function pointerDown(event) {
   pointerWorld = world;
   const hit = hitNode(world);
 
+  if (territory.pointerDown(event, hit)) return;
+
   if (pointers.size === 2) {
     const values = [...pointers.values()];
     pinch = {
@@ -415,6 +437,7 @@ function pointerMove(event) {
   }
 
   pointerWorld = screenToWorld(event.clientX, event.clientY);
+  if (territory.pointerMove(event, pointerWorld)) return;
   if (selectionBox) {
     selectionBox.end = pointerWorld;
     return;
@@ -460,6 +483,15 @@ function pointerUp(event) {
   if (!engine) return;
   const world = screenToWorld(event.clientX, event.clientY);
   const target = hitNode(world);
+
+  if (territory.pointerUp(event, target)) {
+    dragOrder = null;
+    pan = null;
+    pinch = null;
+    pointers.delete(event.pointerId);
+    dom.dragLabel.style.display = 'none';
+    return;
+  }
 
   if (selectionBox) {
     const minX = Math.min(selectionBox.start.x, selectionBox.end.x);
@@ -595,10 +627,13 @@ function render(now) {
   ctx.translate(-600 + camera.x, -360 + camera.y);
   drawBackground(now);
   if (engine) {
+    territory.drawTerritory(ctx, now);
     drawInfluenceField(now);
+    territory.drawFog(ctx, now);
     drawConvoys(now);
     drawNodes(now);
     drawEffects();
+    territory.drawOverlay(ctx, now);
     if (dragOrder?.moved && pointerWorld) drawDrag();
     if (selectionBox) drawSelectionBox();
   }
@@ -651,6 +686,7 @@ function drawNodes(now) {
   const aspectFix = viewport.sx / viewport.sy;
   const portraitBoost = viewport.portrait ? 1.35 : 1;
   for (const node of Object.values(engine.nodes)) {
+    if (!territory.isNodeVisible(node)) continue;
     const config = NODE_TYPES[node.type];
     const faction = FACTIONS[node.owner];
     const selected = selectedIds.has(node.id);
@@ -764,6 +800,7 @@ function drawConvoys() {
   const aspectFix = viewport.sx / viewport.sy;
   const portraitBoost = viewport.portrait ? 1.35 : 1;
   for (const convoy of engine.convoys) {
+    if (!territory.isConvoyVisible(convoy)) continue;
     const geometry = convoyGeometry(convoy);
     const faction = FACTIONS[convoy.owner];
 
@@ -894,6 +931,7 @@ function syncUI(force = false) {
   syncAbilities();
   syncBars();
   syncGroupControls();
+  territory.sync(force);
   const enemyPower = engine.factionPower('red') + engine.factionPower('violet');
   const playerPower = engine.factionPower('player');
   dom.threat.textContent = enemyPower > playerPower * 1.35 ? 'КРИТИЧНО' : enemyPower > playerPower * 0.8 ? 'НАПРЯЖЁННО' : 'СТАБИЛЬНО';
@@ -1050,7 +1088,13 @@ window.NeonDominionQA = {
   startLevel: (id = 'awakening') => startLevel(id),
   getState: () => engine?.snapshot() || null,
   send: (from, to, ratio = 0.5) => engine?.send(from, to, ratio, 'player'),
-  sendMany: (fromIds, to, ratio = 1) => engine?.sendMany(fromIds, to, ratio, 'player'),
+  sendMany: (fromIds, to, ratio = 0.5) => engine?.sendMany(fromIds, to, ratio, 'player'),
+  sendRoute: (fromIds, targets, unit = 'assault') => engine?.sendRoute(fromIds, targets, unit, 'player'),
+  getEngine: () => engine,
+  setUnit: (type) => territory.setUnit(type),
+  upgrade: (id, path) => engine?.upgradeNode(id, path, 'player'),
+  getTerritory: () => territory.state(),
+  isVisible: (id) => engine?.isVisible(id, 'player') ?? false,
   ability: (type, id) => engine?.useAbility(type, id),
   setSpeed: (speed) => setSpeed(speed),
   setSelection: (ids) => {
