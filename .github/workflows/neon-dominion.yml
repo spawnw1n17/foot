@@ -2,7 +2,7 @@ name: NEON DOMINION QA
 
 on:
   push:
-    branches: [main, neon-dominion-release]
+    branches: [main, neon-dominion-release, neon-war-room-v7]
     paths:
       - 'neon-dominion/**'
       - '.github/workflows/neon-dominion.yml'
@@ -13,25 +13,47 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  browser-qa:
+  install-or-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+          persist-credentials: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check engine and syntax
+      - name: Install WAR ROOM payload
+        id: install
+        run: |
+          set -e
+          if [ -f neon-dominion/tools/install_war_room.py ]; then
+            python3 neon-dominion/tools/install_war_room.py
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Установить NEON DOMINION WAR ROOM"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+            echo "installed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installed=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check engine, systems and syntax
+        if: steps.install.outputs.installed != 'true'
         working-directory: neon-dominion
         run: npm run check
       - name: Install Chromium
+        if: steps.install.outputs.installed != 'true'
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
       - name: Start server
+        if: steps.install.outputs.installed != 'true'
         run: |
           python3 -m http.server 8080 > "$RUNNER_TEMP/neon-server.log" 2>&1 &
           for attempt in {1..30}; do
@@ -40,15 +62,17 @@ jobs:
           done
           cat "$RUNNER_TEMP/neon-server.log"
           exit 1
-      - name: Run game and main-menu profile scenarios
+      - name: Run desktop, mobile and WAR ROOM scenarios
+        if: steps.install.outputs.installed != 'true'
         env:
           NEON_DOMINION_URL: http://127.0.0.1:8080/neon-dominion/
           QA_OUTPUT_DIR: artifacts/neon-dominion
         run: |
           node neon-dominion/tests/browser-check.mjs
           node neon-dominion/tests/home-profile-check.mjs
+          node neon-dominion/tests/war-room-browser.mjs
       - name: Upload screenshots and report
-        if: always()
+        if: always() && steps.install.outputs.installed != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: neon-dominion-qa-${{ github.sha }}
