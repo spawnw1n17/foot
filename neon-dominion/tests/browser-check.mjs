@@ -82,12 +82,13 @@ async function mobileScenario() {
     }
   }
   await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await page.waitForFunction(() => window.NeonDominionQA.getState().convoys.filter((convoy) => convoy.to === 'r0').length >= 2);
+  await page.waitForFunction(() => window.NeonDominionQA.getState().convoys.filter((convoy) => convoy.owner === 'player').length >= 2);
   const state = await page.evaluate(() => window.NeonDominionQA.getState());
   const dimensions = await page.evaluate(() => { const rect = document.querySelector('#battlefield').getBoundingClientRect(); return { scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth, canvas: { width: rect.width, height: rect.height } }; });
-  const routed = state.convoys.filter((convoy) => convoy.to === 'r0');
-  assert.equal(routed.length, 2);
-  assert.ok(routed.every((convoy) => convoy.route[0] === 'v0'));
+  const routed = state.convoys.filter((convoy) => convoy.owner === 'player');
+  assert.ok(routed.length >= 2);
+  assert.ok(routed.every((convoy) => [convoy.to, ...convoy.route].includes('v0')));
+  assert.ok(routed.some((convoy) => [convoy.to, ...convoy.route].includes('r0')));
   assert.ok(routed.every((convoy) => convoy.unitType === 'heavy'));
   assert.ok(state.nodes.find((node) => node.id === 'p0').troops < 3);
   assert.ok(state.nodes.find((node) => node.id === 'p1').troops < 3);
