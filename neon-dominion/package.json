@@ -1,11 +1,11 @@
 {
   "name":"neon-dominion",
-  "version":"1.1.1",
+  "version":"2.0.0",
   "private":true,
   "type":"module",
   "scripts":{
     "start":"python3 -m http.server 8080",
-    "check":"node --check src/maps.js && node --check src/engine.js && node --check src/game.js && node --check src/territory.js && node --check src/meta.js && node --check src/home-profile.js && node --check sw.js && node --test tests/*.test.mjs",
+    "check":"node --check src/maps.js && node --check src/war-room-core.js && node --check src/engine.js && node --check src/game.js && node --check src/territory.js && node --check src/meta.js && node --check src/home-profile.js && node --check src/war-room.js && node --check sw.js && node --test tests/*.test.mjs",
     "test":"node --test tests/*.test.mjs"
   },
   "license":"MIT"
