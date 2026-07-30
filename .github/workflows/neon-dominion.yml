@@ -11,6 +11,7 @@ on:
       - 'neon-dominion/**'
       - '.github/workflows/neon-dominion.yml'
       - 'tools/apply-neon-arsenal.py'
+      - 'tools/fix-neon-arsenal-mobile.py'
   workflow_dispatch:
 
 permissions:
@@ -26,17 +27,19 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
       - name: Apply Arsenal integration
         if: github.event_name == 'pull_request' && github.head_ref == 'neon-arsenal-v5'
-        run: python3 tools/apply-neon-arsenal.py
+        run: |
+          python3 tools/apply-neon-arsenal.py
+          python3 tools/fix-neon-arsenal-mobile.py
       - name: Commit generated Arsenal client
         if: github.event_name == 'pull_request' && github.head_ref == 'neon-arsenal-v5'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add neon-dominion/src/game.js
+          git add neon-dominion/src/game.js neon-dominion/tests/browser-check.mjs
           if git diff --cached --quiet; then
             echo "Arsenal integration is current"
           else
-            git commit -m "Интегрировать Arsenal в игровой клиент"
+            git commit -m "Интегрировать Arsenal и уточнить мобильный QA"
             git push origin HEAD:${{ github.head_ref }}
           fi
       - uses: actions/setup-node@v4
