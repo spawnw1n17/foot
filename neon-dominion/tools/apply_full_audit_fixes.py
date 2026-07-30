@@ -140,7 +140,4 @@ replace(
 sw = Path('neon-dominion/sw.js')
 replace(sw, "neon-dominion-v7", "neon-dominion-v8", 'service worker cache')
 
-pages = Path('.github/workflows/pages.yml')
-replace(pages, "neon-dominion-v7", "neon-dominion-v8", 'pages cache validation')
-
 Path('neon-dominion/tools/apply_full_audit_fixes.py').unlink()
