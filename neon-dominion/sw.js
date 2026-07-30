@@ -1,4 +1,4 @@
-const CACHE = 'neon-dominion-v2';
+const CACHE = 'neon-dominion-v3';
 const FILES = [
   './',
   './index.html',

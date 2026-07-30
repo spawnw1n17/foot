@@ -50,10 +50,12 @@ export class DominionEngine {
     const to = this.nodes[toId];
     if (this.result || !from || !to || from.id === to.id || from.owner !== owner) return false;
 
-    const amount = Math.floor(from.troops * clamp(ratio, 0.15, 0.9));
-    if (amount < 2) return false;
+    const normalizedRatio = clamp(ratio, 0.15, 1);
+    const sendAll = normalizedRatio >= 0.999;
+    const amount = sendAll ? from.troops : Math.floor(from.troops * normalizedRatio);
+    if (amount < (sendAll ? 0.5 : 2)) return false;
 
-    from.troops -= amount;
+    from.troops = sendAll ? 0 : Math.max(0, from.troops - amount);
     const length = Math.max(1, distance(from, to));
     const curve = (this.rng() - 0.5) * Math.min(150, length * 0.24);
     this.convoys.push({
@@ -71,11 +73,12 @@ export class DominionEngine {
     return true;
   }
 
-  sendMany(fromIds, toId, ratio = 0.5, owner = 'player') {
+  sendMany(fromIds, toId, ratio = 1, owner = 'player') {
     const unique = [...new Set(fromIds)].filter((id) => id !== toId);
+    const groupRatio = owner === 'player' ? 1 : ratio;
     let sent = 0;
     for (const fromId of unique) {
-      if (this.send(fromId, toId, ratio, owner)) sent += 1;
+      if (this.send(fromId, toId, groupRatio, owner)) sent += 1;
     }
     if (owner === 'player' && sent > 1) this.stats.groupOrders += 1;
     return sent;
