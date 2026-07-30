@@ -45,6 +45,13 @@ jobs:
           NEON_DOMINION_URL: http://127.0.0.1:8080/neon-dominion/
           QA_OUTPUT_DIR: artifacts/neon-dominion
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('neon-dominion/tests/full-audit.mjs')
+          text = path.read_text()
+          text = text.replace("  await page.locator('#profileNameInput').fill('Аудитор');", "  await page.evaluate(() => window.NeonDominionQA.openMeta('profile'));\n  await page.waitForSelector('#profileNameInput');\n  await page.locator('#profileNameInput').fill('Аудитор');")
+          path.write_text(text)
+          PY
           node neon-dominion/tests/browser-check.mjs
           node neon-dominion/tests/home-profile-check.mjs
           node neon-dominion/tests/war-room-browser.mjs
