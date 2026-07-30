@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aerosphere-v7';
+const CACHE_NAME = 'aerosphere-v8';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './src/game.js',
   './src/gesture-controls.js',
   './src/stable-city-clicks.js',
+  './src/command-bridge.js',
   './src/route-guard.js',
   './src/polish.js'
 ];
