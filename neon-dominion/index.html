@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#070912">
+  <meta name="description" content="NEON DOMINION — премиальная браузерная стратегия захвата цифровых регионов.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>NEON DOMINION — Контроль сети</title>
+</head>
+<body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <main class="app-shell">
+    <header class="topbar glass">
+      <div class="brand-wrap">
+        <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div><div class="eyebrow">ТАКТИЧЕСКАЯ СЕТЬ</div><h1>NEON DOMINION</h1></div>
+      </div>
+      <div class="top-stats" aria-live="polite">
+        <div class="stat"><span>СЕКТОРЫ</span><strong id="sectorStat">0 / 0</strong></div>
+        <div class="stat"><span>ЭНЕРГИЯ</span><strong id="energyStat">0</strong></div>
+        <div class="stat"><span>ВРЕМЯ</span><strong id="timeStat">00:00</strong></div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="soundBtn" aria-label="Звук">◉</button>
+        <button class="icon-btn" id="pauseBtn" aria-label="Пауза">Ⅱ</button>
+        <button class="icon-btn" id="menuBtn" aria-label="Меню">☰</button>
+      </div>
+    </header>
+
+    <section class="game-layout">
+      <aside class="left-panel glass" id="leftPanel">
+        <div class="panel-title-row"><div><span class="eyebrow">ОПЕРАЦИЯ</span><h2 id="missionTitle">Выберите миссию</h2></div><span class="difficulty-chip" id="difficultyChip">НОРМА</span></div>
+        <p class="mission-copy" id="missionCopy">Захватывайте узлы, направляя силы из своих секторов. Победа наступает после уничтожения всех вражеских сетей.</p>
+        <div class="objective-list" id="objectiveList"></div>
+        <div class="selected-card" id="selectedCard">
+          <div class="selected-empty">Выберите свой сектор</div>
+        </div>
+        <div class="hint-card"><span>УПРАВЛЕНИЕ</span><p>Проведите от своего узла к цели. Короткое нажатие выбирает сектор. Колесо или жест двумя пальцами меняет масштаб.</p></div>
+      </aside>
+
+      <section class="battlefield-wrap glass">
+        <canvas id="battlefield" aria-label="Тактическая карта NEON DOMINION"></canvas>
+        <div class="map-vignette"></div>
+        <div class="drag-label" id="dragLabel"></div>
+        <div class="notification-stack" id="notificationStack" aria-live="polite"></div>
+        <div class="speed-control glass-inset" role="group" aria-label="Скорость игры">
+          <button data-speed="0">Ⅱ</button><button data-speed="1" class="active">×1</button><button data-speed="2">×2</button>
+        </div>
+        <button class="mobile-panel-toggle" id="mobilePanelToggle">ПАНЕЛЬ</button>
+      </section>
+
+      <aside class="right-panel glass" id="rightPanel">
+        <div class="panel-title-row"><div><span class="eyebrow">КОМАНДНЫЙ МОДУЛЬ</span><h2>Способности</h2></div></div>
+        <div class="ability-grid">
+          <button class="ability" data-ability="shield"><span class="ability-icon">⬡</span><span><b>Купол</b><small>Защита выбранного узла</small></span><em>35</em></button>
+          <button class="ability" data-ability="overdrive"><span class="ability-icon">⚡</span><span><b>Форсаж</b><small>Ускоренный прирост армии</small></span><em>60</em></button>
+          <button class="ability" data-ability="strike"><span class="ability-icon">◇</span><span><b>Импульс</b><small>Удар по вражескому сектору</small></span><em>50</em></button>
+          <button class="ability" data-ability="surge"><span class="ability-icon">↗</span><span><b>Мобилизация</b><small>+12 сил всем базам</small></span><em>75</em></button>
+        </div>
+        <div class="intel-card">
+          <div class="intel-head"><span>СОСТОЯНИЕ СЕТИ</span><strong id="threatLabel">СТАБИЛЬНО</strong></div>
+          <div class="faction-bars" id="factionBars"></div>
+        </div>
+        <div class="combat-log"><div class="intel-head"><span>ЖУРНАЛ</span><button id="clearLogBtn">ОЧИСТИТЬ</button></div><div id="combatLog"></div></div>
+      </aside>
+    </section>
+  </main>
+
+  <div class="overlay visible" id="homeOverlay">
+    <div class="home-card glass">
+      <div class="home-hero">
+        <div class="hero-badge">ПРЕМЬЕРНЫЙ РЕЛИЗ</div>
+        <h2>ЗАХВАТИ<br><span>ЦИФРОВОЙ МИР</span></h2>
+        <p>Молниеносная стратегия о контроле сети. Развивайте базы, комбинируйте способности и переигрывайте адаптивный ИИ.</p>
+        <button class="primary-btn" id="campaignBtn">НАЧАТЬ КАМПАНИЮ <span>→</span></button>
+        <button class="secondary-btn" id="quickBtn">БЫСТРАЯ БИТВА</button>
+      </div>
+      <div class="campaign-panel">
+        <div class="campaign-head"><span class="eyebrow">КАМПАНИЯ</span><h3>Протокол «Доминион»</h3></div>
+        <div class="level-grid" id="levelGrid"></div>
+        <div class="profile-progress"><span>ОБЩИЙ ПРОГРЕСС</span><div class="progress-track"><i id="profileProgress"></i></div><strong id="profileStars">0 / 18 ★</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="resultOverlay">
+    <div class="result-card glass">
+      <span class="result-kicker" id="resultKicker">ОПЕРАЦИЯ ЗАВЕРШЕНА</span>
+      <h2 id="resultTitle">ПОБЕДА</h2>
+      <div class="stars" id="resultStars">★ ★ ★</div>
+      <div class="result-stats" id="resultStats"></div>
+      <div class="result-actions"><button class="secondary-btn" id="retryBtn">ПОВТОРИТЬ</button><button class="primary-btn" id="nextBtn">ДАЛЬШЕ →</button></div>
+    </div>
+  </div>
+
+  <div class="overlay" id="pauseOverlay">
+    <div class="pause-card glass"><span class="eyebrow">ТАКТИЧЕСКАЯ ПАУЗА</span><h2>ИГРА ПРИОСТАНОВЛЕНА</h2><button class="primary-btn" id="resumeBtn">ПРОДОЛЖИТЬ</button><button class="secondary-btn" id="exitBtn">В ГЛАВНОЕ МЕНЮ</button></div>
+  </div>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>
