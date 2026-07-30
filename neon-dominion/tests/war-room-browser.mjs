@@ -88,6 +88,7 @@ async function desktop() {
   assert.ok(boss.id);
   assert.equal(boss.phase, 3);
   assert.equal(boss.mode, 'boss');
+  if (errors.length) console.error('WAR_ROOM_DESKTOP_ERRORS', JSON.stringify(errors));
   assert.equal(errors.length, 0);
   report.desktop = { tabs: 9, regions: 10, mechanics, boss, errors };
   await page.close();
@@ -121,6 +122,7 @@ async function mobile() {
   await page.touchscreen.tap(box.x + box.width * .2, box.y + box.height * .5);
   assert.equal(await page.locator('.editor-node').count(), 1);
   await page.screenshot({ path: `${output}/mobile-war-room-editor.png` });
+  if (errors.length) console.error('WAR_ROOM_MOBILE_ERRORS', JSON.stringify(errors));
   assert.equal(errors.length, 0);
   report.mobile = { width: `${dimensions.scroll}/${dimensions.client}`, shell: dimensions.shell, tabs: dimensions.tabs, regions: dimensions.regions, editorNodes: 1, errors };
   await context.close();
