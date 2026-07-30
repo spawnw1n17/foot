@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#070912">
-  <meta name="description" content="NEON DOMINION — премиальная браузерная стратегия захвата цифровых регионов.">
+  <meta name="description" content="NEON DOMINION — премиальная браузерная стратегия свободного захвата баз.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
-  <title>NEON DOMINION — Контроль сети</title>
+  <link rel="stylesheet" href="styles-v2.css">
+  <title>NEON DOMINION — Свободный фронт</title>
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -19,7 +20,7 @@
         <div><div class="eyebrow">ТАКТИЧЕСКАЯ СЕТЬ</div><h1>NEON DOMINION</h1></div>
       </div>
       <div class="top-stats" aria-live="polite">
-        <div class="stat"><span>СЕКТОРЫ</span><strong id="sectorStat">0 / 0</strong></div>
+        <div class="stat"><span>БАЗЫ</span><strong id="sectorStat">0 / 0</strong></div>
         <div class="stat"><span>ЭНЕРГИЯ</span><strong id="energyStat">0</strong></div>
         <div class="stat"><span>ВРЕМЯ</span><strong id="timeStat">00:00</strong></div>
       </div>
@@ -33,12 +34,13 @@
     <section class="game-layout">
       <aside class="left-panel glass" id="leftPanel">
         <div class="panel-title-row"><div><span class="eyebrow">ОПЕРАЦИЯ</span><h2 id="missionTitle">Выберите миссию</h2></div><span class="difficulty-chip" id="difficultyChip">НОРМА</span></div>
-        <p class="mission-copy" id="missionCopy">Захватывайте узлы, направляя силы из своих секторов. Победа наступает после уничтожения всех вражеских сетей.</p>
+        <p class="mission-copy" id="missionCopy">Захватывайте базы, направляя силы по свободным траекториям в любую точку сети.</p>
         <div class="objective-list" id="objectiveList"></div>
-        <div class="selected-card" id="selectedCard">
-          <div class="selected-empty">Выберите свой сектор</div>
+        <div class="selected-card" id="selectedCard"><div class="selected-empty">Выберите базу или группу</div></div>
+        <div class="hint-card">
+          <span>СВОБОДНОЕ УПРАВЛЕНИЕ</span>
+          <p>Проведите от своей базы к любой цели. Для группового приказа нажмите «Группа», коснитесь нескольких баз или обведите их рамкой, затем нажмите «Отправить» и выберите цель.</p>
         </div>
-        <div class="hint-card"><span>УПРАВЛЕНИЕ</span><p>Проведите от своего узла к цели. Короткое нажатие выбирает сектор. Колесо или жест двумя пальцами меняет масштаб.</p></div>
       </aside>
 
       <section class="battlefield-wrap glass">
@@ -46,6 +48,14 @@
         <div class="map-vignette"></div>
         <div class="drag-label" id="dragLabel"></div>
         <div class="notification-stack" id="notificationStack" aria-live="polite"></div>
+
+        <div class="group-controls glass-inset" role="group" aria-label="Групповое управление">
+          <button id="groupSelectBtn" type="button">ГРУППА</button>
+          <button id="groupSendBtn" type="button" hidden>ОТПРАВИТЬ 0</button>
+          <button id="groupClearBtn" type="button" hidden>СБРОС</button>
+          <span id="groupStatus">Свободное движение</span>
+        </div>
+
         <div class="speed-control glass-inset" role="group" aria-label="Скорость игры">
           <button data-speed="0">Ⅱ</button><button data-speed="1" class="active">×1</button><button data-speed="2">×2</button>
         </div>
@@ -55,9 +65,9 @@
       <aside class="right-panel glass" id="rightPanel">
         <div class="panel-title-row"><div><span class="eyebrow">КОМАНДНЫЙ МОДУЛЬ</span><h2>Способности</h2></div></div>
         <div class="ability-grid">
-          <button class="ability" data-ability="shield"><span class="ability-icon">⬡</span><span><b>Купол</b><small>Защита выбранного узла</small></span><em>35</em></button>
+          <button class="ability" data-ability="shield"><span class="ability-icon">⬡</span><span><b>Купол</b><small>Защита выбранной базы</small></span><em>35</em></button>
           <button class="ability" data-ability="overdrive"><span class="ability-icon">⚡</span><span><b>Форсаж</b><small>Ускоренный прирост армии</small></span><em>60</em></button>
-          <button class="ability" data-ability="strike"><span class="ability-icon">◇</span><span><b>Импульс</b><small>Удар по вражескому сектору</small></span><em>50</em></button>
+          <button class="ability" data-ability="strike"><span class="ability-icon">◇</span><span><b>Импульс</b><small>Удар по вражеской базе</small></span><em>50</em></button>
           <button class="ability" data-ability="surge"><span class="ability-icon">↗</span><span><b>Мобилизация</b><small>+12 сил всем базам</small></span><em>75</em></button>
         </div>
         <div class="intel-card">
@@ -72,9 +82,9 @@
   <div class="overlay visible" id="homeOverlay">
     <div class="home-card glass">
       <div class="home-hero">
-        <div class="hero-badge">ПРЕМЬЕРНЫЙ РЕЛИЗ</div>
+        <div class="hero-badge">FREE FRONT UPDATE</div>
         <h2>ЗАХВАТИ<br><span>ЦИФРОВОЙ МИР</span></h2>
-        <p>Молниеносная стратегия о контроле сети. Развивайте базы, комбинируйте способности и переигрывайте адаптивный ИИ.</p>
+        <p>Свободное направление армий, групповые приказы, новые премиальные базы и глубокое тактическое управление.</p>
         <button class="primary-btn" id="campaignBtn">НАЧАТЬ КАМПАНИЮ <span>→</span></button>
         <button class="secondary-btn" id="quickBtn">БЫСТРАЯ БИТВА</button>
       </div>
