@@ -19,7 +19,6 @@ installMobileNavigation();
 installConnectionStatus();
 installKeyboardHelp();
 installPersistenceHooks();
-installMapPanning();
 installAccessibilityObserver();
 installBuildBadge();
 refreshAnnotations();
@@ -93,24 +92,8 @@ function installToolbarTools() {
     input.focus();
   });
 
-  tools.querySelectorAll('[data-zoom]').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (button.dataset.zoom === 'in') setZoom(zoom * 1.35);
-      if (button.dataset.zoom === 'out') setZoom(zoom / 1.35);
-      if (button.dataset.zoom === 'fit') resetView();
-    });
-  });
 
-  svg.addEventListener('wheel', (event) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    const point = clientToMap(event.clientX, event.clientY);
-    centerX = point.x;
-    centerY = point.y;
-    setZoom(zoom * (event.deltaY < 0 ? 1.18 : 0.85));
-  }, { passive: false });
-
-  showMapHint('Поиск города и масштабирование карты готовы. Ctrl + колесо — быстрый зум.');
+  showMapHint('Карта готова: колесо масштабирует, обычное перетаскивание двигает её плавно.');
 }
 
 function highlightCity(query) {
@@ -171,42 +154,6 @@ function applyViewBox() {
   svg.classList.toggle('is-zoomed', zoom > 1.01);
   svg.dataset.zoom = zoom.toFixed(2);
   window.__AEROSPHERE_QA__.zoom = zoom;
-}
-
-function installMapPanning() {
-  if (!svg) return;
-
-  svg.addEventListener('pointerdown', (event) => {
-    if (zoom <= 1.01 || (!event.shiftKey && event.button !== 1)) return;
-    event.preventDefault();
-    const box = svg.getBoundingClientRect();
-    panSession = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      centerX,
-      centerY,
-      scaleX: (1200 / zoom) / Math.max(1, box.width),
-      scaleY: (620 / zoom) / Math.max(1, box.height)
-    };
-    svg.setPointerCapture(event.pointerId);
-    svg.classList.add('is-panning');
-  });
-
-  svg.addEventListener('pointermove', (event) => {
-    if (!panSession || event.pointerId !== panSession.pointerId) return;
-    centerX = panSession.centerX - (event.clientX - panSession.startX) * panSession.scaleX;
-    centerY = panSession.centerY - (event.clientY - panSession.startY) * panSession.scaleY;
-    applyViewBox();
-  });
-
-  const finishPan = (event) => {
-    if (!panSession || event.pointerId !== panSession.pointerId) return;
-    panSession = null;
-    svg.classList.remove('is-panning');
-  };
-  svg.addEventListener('pointerup', finishPan);
-  svg.addEventListener('pointercancel', finishPan);
 }
 
 function installMobileNavigation() {

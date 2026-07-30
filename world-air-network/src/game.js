@@ -77,6 +77,11 @@ let toastTimer = null;
 let lastFrame = performance.now();
 let simulationAccumulator = 0;
 let renderAccumulator = 0;
+let panelRenderAccumulator = 0;
+let routeLayerSignature = '';
+let cityLayerSignature = '';
+let planeLayerSignature = '';
+const planeVisuals = new Map();
 let gameOverShown = false;
 
 bindEvents();
@@ -233,13 +238,24 @@ function frameLoop(now) {
     }
   }
 
+  const mapBusy = dom.worldMap.classList.contains('is-interacting')
+    || dom.worldMap.classList.contains('is-inertial');
+
+  if (!mapBusy) updatePlanePositions(elapsedSeconds);
+
   renderAccumulator += elapsedSeconds;
+  panelRenderAccumulator += elapsedSeconds;
   if (renderAccumulator >= 0.22) {
     renderAccumulator = 0;
     renderStats();
-    renderMap();
-    renderSidePanel();
-    renderEvents();
+    if (!mapBusy) {
+      renderMap();
+      renderEvents();
+    }
+    if (!mapBusy && panelRenderAccumulator >= 0.72) {
+      panelRenderAccumulator = 0;
+      renderSidePanel();
+    }
     if (state.gameOver && !gameOverShown) showGameOver();
   }
 
@@ -372,7 +388,7 @@ function proposeRoute(aId, bId) {
 
 function renderAll() {
   renderStats();
-  renderMap();
+  renderMap(true);
   renderSidePanel();
   renderEvents();
   syncTabs();
@@ -396,42 +412,121 @@ function renderStats() {
   dom.timeStat.textContent = `${hours}:${minutes}`;
 }
 
-function renderMap() {
-  const routes = state.routes.map((route) => {
+function renderMap(force = false) {
+  renderRouteLayer(force);
+  renderCityLayer(force);
+  const planesRebuilt = ensurePlaneNodes(force);
+  updateRouteVisuals();
+  updateCityVisuals();
+  if (planesRebuilt) updatePlanePositions(0, true);
+}
+
+function renderRouteLayer(force = false) {
+  const signature = state.routes.map((route) => route.id).join('|');
+  if (!force && signature === routeLayerSignature) return;
+
+  dom.routeLayer.innerHTML = state.routes.map((route) => {
     const a = projectCity(cityMap[route.a]);
     const b = projectCity(cityMap[route.b]);
-    const disabled = route.disabledUntil > state.clock;
-    const selected = route.id === selectedRouteId;
-    const className = ['route-core', disabled ? 'route-disabled' : '', selected ? 'route-selected' : ''].filter(Boolean).join(' ');
+    const path = `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
     return `
       <g data-route-id="${route.id}">
-        <path class="route-base ${disabled ? 'route-disabled' : ''}" d="M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}" />
-        <path class="${className}" d="M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}" />
-        <path class="route-hit" d="M ${a.x.toFixed(1)} ${a.y.toFixed(1)} L ${b.x.toFixed(1)} ${b.y.toFixed(1)}" />
+        <path class="route-base" d="${path}" />
+        <path class="route-core" d="${path}" />
+        <path class="route-hit" d="${path}" />
       </g>`;
   }).join('');
-  dom.routeLayer.innerHTML = routes;
+  routeLayerSignature = signature;
+}
 
-  dom.planeLayer.innerHTML = state.routes.map((route) => {
+function renderCityLayer(force = false) {
+  const cities = CITY_CATALOG.filter((city) => mapFilter === 'all' || state.airports[city.id]);
+  const signature = `${mapFilter}|${cities.map((city) => `${city.id}:${state.airports[city.id] ? 1 : 0}`).join('|')}`;
+  if (!force && signature === cityLayerSignature) return;
+
+  dom.cityLayer.innerHTML = cities.map((city) => renderCityNode(city)).join('');
+  cityLayerSignature = signature;
+}
+
+function ensurePlaneNodes(force = false) {
+  const signature = state.routes.map((route) => route.id).join('|');
+  if (!force && signature === planeLayerSignature) return false;
+
+  dom.planeLayer.innerHTML = state.routes.map((route) => `
+    <g class="plane-marker" data-plane-route-id="${route.id}">
+      <circle r="8"></circle>
+      <path d="M-5,-1 L2,-1 L6,-5 L8,-5 L6,-1 L9,0 L6,1 L8,5 L6,5 L2,1 L-5,1 L-8,4 L-9,4 L-8,0 L-9,-4 L-8,-4 Z"></path>
+    </g>`).join('');
+  planeLayerSignature = signature;
+  planeVisuals.clear();
+  return true;
+}
+
+function updateRouteVisuals() {
+  state.routes.forEach((route) => {
+    const group = dom.routeLayer.querySelector(`[data-route-id="${CSS.escape(route.id)}"]`);
+    if (!group) return;
+    const disabled = route.disabledUntil > state.clock;
+    const selected = route.id === selectedRouteId;
+    group.querySelector('.route-base')?.classList.toggle('route-disabled', disabled);
+    const core = group.querySelector('.route-core');
+    core?.classList.toggle('route-disabled', disabled);
+    core?.classList.toggle('route-selected', selected);
+  });
+}
+
+function updateCityVisuals() {
+  dom.cityLayer.querySelectorAll('[data-city-id]').forEach((node) => {
+    const cityId = node.dataset.cityId;
+    const isOpen = Boolean(state.airports[cityId]);
+    const queue = isOpen ? queueTotal(state, cityId) : 0;
+    const capacity = isOpen ? getAirportCapacity(state, cityId) : 1;
+    const ratio = queue / Math.max(1, capacity);
+
+    node.classList.toggle('open', isOpen);
+    node.classList.toggle('closed', !isOpen);
+    node.classList.toggle('selected', cityId === selectedCityId);
+    node.classList.toggle('route-source', cityId === routeDraftCityId);
+    node.classList.toggle('overloaded', ratio >= 1);
+
+    const arc = node.querySelector('.city-capacity-arc');
+    if (!arc) return;
+    const circumference = 2 * Math.PI * 11;
+    const dash = Math.min(1, ratio) * circumference;
+    arc.setAttribute('stroke-dasharray', `${dash.toFixed(1)} ${(circumference - dash).toFixed(1)}`);
+    arc.classList.toggle('bad', ratio >= 1);
+    arc.classList.toggle('warn', ratio >= 0.75 && ratio < 1);
+  });
+}
+
+function updatePlanePositions(elapsedSeconds = 0, snap = false) {
+  const smoothing = snap || elapsedSeconds <= 0 ? 1 : 1 - Math.exp(-elapsedSeconds * 18);
+
+  state.routes.forEach((route) => {
     const a = projectCity(cityMap[route.a]);
     const b = projectCity(cityMap[route.b]);
     const from = route.direction === 0 ? a : b;
     const to = route.direction === 0 ? b : a;
     const progress = Math.max(0, Math.min(1, route.progress));
-    const x = from.x + (to.x - from.x) * progress;
-    const y = from.y + (to.y - from.y) * progress;
-    const angle = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
-    const opacity = route.disabledUntil > state.clock ? 0.35 : 1;
-    return `<g class="plane-marker" transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(1)})" opacity="${opacity}">
-      <circle r="8"></circle>
-      <path d="M-5,-1 L2,-1 L6,-5 L8,-5 L6,-1 L9,0 L6,1 L8,5 L6,5 L2,1 L-5,1 L-8,4 L-9,4 L-8,0 L-9,-4 L-8,-4 Z"></path>
-    </g>`;
-  }).join('');
+    const targetX = from.x + (to.x - from.x) * progress;
+    const targetY = from.y + (to.y - from.y) * progress;
+    const targetAngle = Math.atan2(to.y - from.y, to.x - from.x) * 180 / Math.PI;
 
-  dom.cityLayer.innerHTML = CITY_CATALOG
-    .filter((city) => mapFilter === 'all' || state.airports[city.id])
-    .map((city) => renderCityNode(city))
-    .join('');
+    let visual = planeVisuals.get(route.id);
+    if (!visual) {
+      const node = dom.planeLayer.querySelector(`[data-plane-route-id="${CSS.escape(route.id)}"]`);
+      if (!node) return;
+      visual = { node, x: targetX, y: targetY, angle: targetAngle };
+      planeVisuals.set(route.id, visual);
+    }
+
+    visual.x += (targetX - visual.x) * smoothing;
+    visual.y += (targetY - visual.y) * smoothing;
+    const angleDelta = ((targetAngle - visual.angle + 540) % 360) - 180;
+    visual.angle += angleDelta * smoothing;
+    visual.node.setAttribute('transform', `translate(${visual.x.toFixed(2)} ${visual.y.toFixed(2)}) rotate(${visual.angle.toFixed(2)})`);
+    visual.node.setAttribute('opacity', route.disabledUntil > state.clock ? '0.35' : '1');
+  });
 }
 
 function renderCityNode(city) {

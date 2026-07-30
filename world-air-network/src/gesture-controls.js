@@ -21,6 +21,9 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
   let routePreview = null;
   let routePreviewTarget = null;
   let inertiaFrame = 0;
+  let mapFrame = 0;
+  let lastAppliedViewBox = worldMap.getAttribute('viewBox') || '';
+  let lastQaSample = 0;
 
   installGestureStyles();
   ensureGestureLayer();
@@ -36,7 +39,10 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
   window.addEventListener('keydown', handleMapKeyboard, true);
   document.addEventListener('click', handleZoomControl, true);
 
-  new MutationObserver(() => syncMapView()).observe(worldMap, { attributes: true, attributeFilter: ['viewBox'] });
+  new MutationObserver(() => {
+    const current = worldMap.getAttribute('viewBox') || '';
+    if (current !== lastAppliedViewBox) syncMapView();
+  }).observe(worldMap, { attributes: true, attributeFilter: ['viewBox'] });
   setTimeout(() => showGestureHint('Перетаскивайте карту мышью или пальцем. Колесо меняет масштаб. Протяните линию между открытыми аэропортами, чтобы создать маршрут.'), 0);
 
   function installGestureStyles() {
@@ -46,8 +52,18 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
       .world-map.is-zoomed,
       .world-map.is-panning,
       .world-map.is-route-dragging { touch-action: none; }
-      .world-map.is-panning { cursor: grabbing; }
+      .world-map.is-panning,
+      .world-map.is-inertial { cursor: grabbing; }
       .world-map.is-route-dragging { cursor: crosshair; }
+      .world-map.is-interacting .route-core,
+      .world-map.is-interacting .city-ring,
+      .world-map.is-interacting .city-core,
+      .world-map.is-inertial .route-core,
+      .world-map.is-inertial .city-ring,
+      .world-map.is-inertial .city-core { filter: none !important; }
+      .world-map.is-interacting text,
+      .world-map.is-inertial text { text-rendering: optimizeSpeed; }
+      .world-map.is-route-dragging .route-drag-preview { filter: none; }
       .city-node.open { touch-action: none; }
       .gesture-layer { pointer-events: none; }
       .tutorial-card { pointer-events: none; }
@@ -104,12 +120,15 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
       lastTime: performance.now(),
       velocityX: 0,
       velocityY: 0,
+      lastCenterX: mapView.centerX,
+      lastCenterY: mapView.centerY,
       startCenterX: mapView.centerX,
       startCenterY: mapView.centerY,
       scaleX: mapView.width / Math.max(1, box.width),
       scaleY: mapView.height / Math.max(1, box.height)
     };
 
+    worldMap.classList.add('is-interacting');
     try { worldMap.setPointerCapture(event.pointerId); } catch {}
     event.stopImmediatePropagation();
   }
@@ -145,22 +164,25 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
     const elapsed = Math.max(1, now - gesture.lastTime);
     const nextCenterX = gesture.startCenterX - dx * gesture.scaleX;
     const nextCenterY = gesture.startCenterY - dy * gesture.scaleY;
-    const instantVelocityX = (nextCenterX - mapView.centerX) / elapsed;
-    const instantVelocityY = (nextCenterY - mapView.centerY) / elapsed;
-    gesture.velocityX = gesture.velocityX * 0.68 + instantVelocityX * 0.32;
-    gesture.velocityY = gesture.velocityY * 0.68 + instantVelocityY * 0.32;
+    const instantVelocityX = (nextCenterX - gesture.lastCenterX) / elapsed;
+    const instantVelocityY = (nextCenterY - gesture.lastCenterY) / elapsed;
+    gesture.velocityX = gesture.velocityX * 0.72 + instantVelocityX * 0.28;
+    gesture.velocityY = gesture.velocityY * 0.72 + instantVelocityY * 0.28;
     gesture.lastTime = now;
+    gesture.lastCenterX = nextCenterX;
+    gesture.lastCenterY = nextCenterY;
     mapView.centerX = nextCenterX;
     mapView.centerY = nextCenterY;
-    applyMapView();
+    scheduleMapView();
   }
 
   function handlePointerUp(event) {
     if (!gesture || event.pointerId !== gesture.pointerId) return;
     const completed = gesture;
     gesture = null;
+    flushScheduledMapView();
     try { worldMap.releasePointerCapture(event.pointerId); } catch {}
-    worldMap.classList.remove('is-panning', 'is-route-dragging');
+    worldMap.classList.remove('is-panning', 'is-route-dragging', 'is-interacting');
 
     if (!completed.moved) return;
     event.preventDefault();
@@ -187,7 +209,8 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
   function handlePointerCancel(event) {
     if (!gesture || event.pointerId !== gesture.pointerId) return;
     gesture = null;
-    worldMap.classList.remove('is-panning', 'is-route-dragging');
+    cancelScheduledMapView();
+    worldMap.classList.remove('is-panning', 'is-route-dragging', 'is-interacting');
     clearRoutePreview();
   }
 
@@ -397,15 +420,43 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
     worldMap.dataset.zoom = mapView.zoom.toFixed(2);
   }
 
+  function scheduleMapView() {
+    if (mapFrame) return;
+    mapFrame = requestAnimationFrame(() => {
+      mapFrame = 0;
+      applyMapView();
+    });
+  }
+
+  function flushScheduledMapView() {
+    if (!mapFrame) return;
+    cancelAnimationFrame(mapFrame);
+    mapFrame = 0;
+    applyMapView();
+  }
+
+  function cancelScheduledMapView() {
+    if (mapFrame) cancelAnimationFrame(mapFrame);
+    mapFrame = 0;
+  }
+
   function applyMapView() {
     mapView.width = MAP_WIDTH / mapView.zoom;
     mapView.height = MAP_HEIGHT / mapView.zoom;
     mapView.centerX = clamp(mapView.centerX, mapView.width / 2, MAP_WIDTH - mapView.width / 2);
     mapView.centerY = clamp(mapView.centerY, mapView.height / 2, MAP_HEIGHT - mapView.height / 2);
-    worldMap.setAttribute('viewBox', `${mapView.centerX - mapView.width / 2} ${mapView.centerY - mapView.height / 2} ${mapView.width} ${mapView.height}`);
+    const viewBox = `${mapView.centerX - mapView.width / 2} ${mapView.centerY - mapView.height / 2} ${mapView.width} ${mapView.height}`;
+    if (viewBox !== lastAppliedViewBox) {
+      lastAppliedViewBox = viewBox;
+      worldMap.setAttribute('viewBox', viewBox);
+    }
     worldMap.classList.toggle('is-zoomed', mapView.zoom > 1.01);
-    worldMap.dataset.zoom = mapView.zoom.toFixed(2);
-    if (window.__AEROSPHERE_QA__) {
+    const zoomText = mapView.zoom.toFixed(2);
+    if (worldMap.dataset.zoom !== zoomText) worldMap.dataset.zoom = zoomText;
+
+    const now = performance.now();
+    if (window.__AEROSPHERE_QA__ && now - lastQaSample >= 100) {
+      lastQaSample = now;
       window.__AEROSPHERE_QA__.zoom = mapView.zoom;
       window.__AEROSPHERE_QA__.mapCenter = { x: mapView.centerX, y: mapView.centerY };
     }
@@ -417,6 +468,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
     let vx = velocityX;
     let vy = velocityY;
     if (Math.hypot(vx, vy) < 0.035) return;
+    worldMap.classList.add('is-inertial');
     let previous = performance.now();
     const step = (now) => {
       const elapsed = Math.min(34, Math.max(1, now - previous));
@@ -424,10 +476,14 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
       mapView.centerX += vx * elapsed;
       mapView.centerY += vy * elapsed;
       applyMapView();
-      const friction = Math.pow(0.9, elapsed / 16.67);
+      const friction = Math.pow(0.915, elapsed / 16.67);
       vx *= friction;
       vy *= friction;
-      if (Math.hypot(vx, vy) < 0.008) return void (inertiaFrame = 0);
+      if (Math.hypot(vx, vy) < 0.008) {
+        inertiaFrame = 0;
+        worldMap.classList.remove('is-inertial');
+        return;
+      }
       inertiaFrame = requestAnimationFrame(step);
     };
     inertiaFrame = requestAnimationFrame(step);
@@ -436,6 +492,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
   function cancelInertia() {
     if (inertiaFrame) cancelAnimationFrame(inertiaFrame);
     inertiaFrame = 0;
+    worldMap.classList.remove('is-inertial');
   }
 
   function recordGesture(type) {

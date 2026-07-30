@@ -1,4 +1,4 @@
-const CACHE_NAME = 'aerosphere-v9';
+const CACHE_NAME = 'aerosphere-v10';
 const APP_SHELL = [
   './',
   './index.html',
