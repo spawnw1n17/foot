@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Check game engine
+      - name: Check game engine and balance
         working-directory: world-air-network
         run: npm run check
 
@@ -48,19 +48,7 @@ jobs:
           cat "$RUNNER_TEMP/aerosphere-server.log"
           exit 1
 
-      - name: Diagnose route drag events
-        env:
-          AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
-          QA_OUTPUT_DIR: artifacts/aerosphere-qa
-        run: node world-air-network/tests/gesture-diagnostic.mjs
-
-      - name: Diagnose touch drag events
-        env:
-          AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
-          QA_OUTPUT_DIR: artifacts/aerosphere-qa
-        run: node world-air-network/tests/touch-diagnostic.mjs
-
-      - name: Play complete browser scenario
+      - name: Play desktop and real-touch mobile scenario
         env:
           AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
           QA_OUTPUT_DIR: artifacts/aerosphere-qa
@@ -77,7 +65,5 @@ jobs:
             world-air-network/src/gesture-controls.js
             world-air-network/src/command-bridge.js
             world-air-network/tests/browser-check.mjs
-            world-air-network/tests/gesture-diagnostic.mjs
-            world-air-network/tests/touch-diagnostic.mjs
             ${{ runner.temp }}/aerosphere-server.log
           retention-days: 14
