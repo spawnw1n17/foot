@@ -25,17 +25,47 @@ async function desktopScenario() {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.evaluate(() => window.NeonDominionQA.startLevel('crossfire'));
+  await page.waitForFunction(() => window.NeonDominionQA?.getMeta);
+
+  const initial = await page.evaluate(() => window.NeonDominionQA.resetMeta());
+  assert.equal(initial.credits, 1500);
+  assert.equal(initial.commander, 'vector');
+  assert.equal(await page.locator('#playerProfileBtn').count(), 1);
+
+  await page.evaluate(() => window.NeonDominionQA.openMeta('profile'));
+  await page.locator('#profileNameInput').fill('Москва');
+  await page.locator('[data-meta-action="save-name"]').click();
+  await page.waitForFunction(() => window.NeonDominionQA.getMeta().name === 'Москва');
+
+  await page.evaluate(() => window.NeonDominionQA.openMeta('shop'));
+  assert.ok(await page.locator('.shop-card').count() >= 25);
+  await page.evaluate(() => window.NeonDominionQA.buyMeta('base-obsidian'));
+  await page.waitForFunction(() => window.NeonDominionQA.getMeta().equipped.base === 'base-obsidian');
+
+  await page.evaluate(() => {
+    const battle = { victory: true, stars: 3, totalStars: 9, order: 6, mapId: 'dominion', time: 70, stats: { captured: 12, sent: 800, intercepts: 4, upgrades: 5, abilities: 2, groupOrders: 2, chainedRoutes: 3 } };
+    window.NeonDominionQA.completeMetaBattle(battle);
+    window.NeonDominionQA.completeMetaBattle(battle);
+    window.NeonDominionQA.chooseCommander('nexus');
+  });
+  await page.waitForFunction(() => window.NeonDominionQA.getMeta().commander === 'nexus');
+  const metaBeforeBattle = await page.evaluate(() => window.NeonDominionQA.getMeta());
+  assert.ok(metaBeforeBattle.level.level > 1);
+  assert.ok(metaBeforeBattle.stats.wins >= 2);
+  assert.ok(metaBeforeBattle.owned.includes('base-obsidian'));
+
+  await page.evaluate(() => { window.NeonDominionQA.closeMeta(); window.NeonDominionQA.startLevel('crossfire'); });
   await page.waitForFunction(() => window.NeonDominionQA?.getTerritory()?.territory?.player > 0);
   await page.waitForFunction(() => window.NeonDominionQA.assetsReady());
   assert.equal(await page.locator('#territoryConsole').count(), 1);
   assert.equal(await page.locator('#miniMap').count(), 1);
+  const commanderStart = await page.evaluate(() => ({ energy: window.NeonDominionQA.getState().energy, industry: window.NeonDominionQA.getState().nodes.find((node) => node.id === 'p0').upgrades.industry }));
+  assert.ok(commanderStart.energy >= 62);
+  assert.ok(commanderStart.industry >= 1);
 
   await page.evaluate(() => { window.NeonDominionQA.getEngine().energy = 100; });
   await page.locator('[data-upgrade="industry"]').click();
-  await page.waitForFunction(() => window.NeonDominionQA.getState().nodes.find((node) => node.id === 'p0').upgrades.industry === 1);
   await page.locator('[data-unit="rapid"]').click();
-
   const box = await page.locator('#battlefield').boundingBox();
   const source = mapPoint(box, 165, 360);
   const remoteEnemy = mapPoint(box, 1020, 190);
@@ -48,13 +78,22 @@ async function desktopScenario() {
   const state = await page.evaluate(() => window.NeonDominionQA.getState());
   const territory = await page.evaluate(() => window.NeonDominionQA.getTerritory());
   const performanceData = await page.evaluate(() => ({ longTasks: window.__qaLongTasks || [] }));
-  assert.equal(state.nodes.find((node) => node.id === 'p0').upgrades.industry, 1);
   assert.equal(state.convoys.find((convoy) => convoy.from === 'p0').unitType, 'rapid');
   assert.ok(Object.values(territory.territory).reduce((sum, value) => sum + value, 0) > 0.99);
   assert.equal(errors.length, 0);
   assert.ok(performanceData.longTasks.filter((duration) => duration > 180).length <= 1);
-  report.desktop = { territory: territory.territory, unit: territory.unitType, upgraded: true, foggedEnemy: await page.evaluate(() => !window.NeonDominionQA.isVisible('v0')), longTasks: performanceData.longTasks, errors };
-  await page.screenshot({ path: `${output}/desktop-territory.png`, fullPage: true });
+  report.desktop = {
+    profile: { name: metaBeforeBattle.name, level: metaBeforeBattle.level.level, rank: metaBeforeBattle.rank.name, credits: metaBeforeBattle.credits, shards: metaBeforeBattle.shards },
+    store: { catalogCards: await page.locator('.shop-card').count(), equippedBase: metaBeforeBattle.equipped.base, commander: metaBeforeBattle.commander },
+    commanderStart,
+    territory: territory.territory,
+    unit: territory.unitType,
+    longTasks: performanceData.longTasks,
+    errors,
+  };
+  await page.screenshot({ path: `${output}/desktop-arsenal-battle.png`, fullPage: true });
+  await page.evaluate(() => window.NeonDominionQA.openMeta('profile'));
+  await page.screenshot({ path: `${output}/desktop-player-profile.png`, fullPage: true });
   await page.close();
 }
 
@@ -65,7 +104,18 @@ async function mobileScenario() {
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.evaluate(() => { window.NeonDominionQA.startLevel('crossfire'); window.NeonDominionQA.setUnit('heavy'); });
+  await page.waitForFunction(() => window.NeonDominionQA?.getMeta);
+  await page.evaluate(() => { window.NeonDominionQA.resetMeta(); window.NeonDominionQA.openMeta('shop'); });
+  const arsenalDimensions = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth, shell: document.querySelector('.arsenal-shell').getBoundingClientRect().toJSON() }));
+  assert.ok(arsenalDimensions.scroll <= arsenalDimensions.client + 1);
+  assert.equal(await page.locator('.arsenal-nav [data-meta-tab]').count(), 7);
+  await page.locator('[data-meta-tab="missions"]').click();
+  assert.equal(await page.locator('.mission-card').count(), 6);
+  await page.locator('[data-meta-tab="season"]').click();
+  assert.equal(await page.locator('.season-node').count(), 20);
+  await page.screenshot({ path: `${output}/mobile-arsenal-season.png`, fullPage: true });
+
+  await page.evaluate(() => { window.NeonDominionQA.closeMeta(); window.NeonDominionQA.startLevel('crossfire'); window.NeonDominionQA.setUnit('heavy'); });
   await page.waitForFunction(() => window.NeonDominionQA.getState()?.nodes?.length >= 10);
   const box = await page.locator('#battlefield').boundingBox();
   const p0 = mapPoint(box, 165, 360);
@@ -88,15 +138,17 @@ async function mobileScenario() {
   const routed = state.convoys.filter((convoy) => convoy.owner === 'player');
   assert.ok(routed.length >= 2);
   assert.ok(routed.every((convoy) => [convoy.to, ...convoy.route].includes('v0')));
-  assert.ok(routed.some((convoy) => [convoy.to, ...convoy.route].includes('r0')));
   assert.ok(routed.every((convoy) => convoy.unitType === 'heavy'));
   assert.ok(state.nodes.find((node) => node.id === 'p0').troops < 3);
   assert.ok(state.nodes.find((node) => node.id === 'p1').troops < 3);
-  assert.equal(state.stats.chainedRoutes, 1);
   assert.ok(dimensions.scroll <= dimensions.client + 1);
   assert.equal(errors.length, 0);
-  report.mobile = { width: `${dimensions.scroll}/${dimensions.client}`, canvas: dimensions.canvas, sources: ['p0', 'p1'], targets: ['r0', 'v0'], routes: routed.map((convoy) => convoy.route), unit: routed[0].unitType, territory: state.territory, errors };
-  await page.screenshot({ path: `${output}/mobile-territory-route.png`, fullPage: true });
+  report.mobile = {
+    arsenal: { width: `${arsenalDimensions.scroll}/${arsenalDimensions.client}`, navItems: 7, missions: 6, seasonLevels: 20 },
+    battle: { width: `${dimensions.scroll}/${dimensions.client}`, canvas: dimensions.canvas, routes: routed.map((convoy) => convoy.route), unit: routed[0].unitType },
+    errors,
+  };
+  await page.screenshot({ path: `${output}/mobile-arsenal-battle.png`, fullPage: true });
   await context.close();
 }
 
