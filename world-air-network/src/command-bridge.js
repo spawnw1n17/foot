@@ -16,7 +16,12 @@ window.addEventListener('aerosphere:propose-route', (event) => proposeRoute(even
 attachSearchBridge();
 
 function selectCity(cityId) {
-  if (!worldMap || !cityById.has(cityId)) return false;
+  if (!cityById.has(cityId)) return false;
+  if (window.AeroSphereGame?.selectCity(cityId)) {
+    window.__AEROSPHERE_QA__ && (window.__AEROSPHERE_QA__.lastCommand = `select:${cityId}`);
+    return true;
+  }
+  if (!worldMap) return false;
   const proxy = document.createElementNS(SVG_NS, 'g');
   proxy.dataset.cityId = cityId;
   proxy.dataset.aeroCityProxy = '1';
@@ -37,6 +42,10 @@ function selectCity(cityId) {
 
 async function proposeRoute(sourceId, targetId) {
   if (!cityById.has(sourceId) || !cityById.has(targetId) || sourceId === targetId) return false;
+  if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) {
+    window.__AEROSPHERE_QA__ && (window.__AEROSPHERE_QA__.lastCommand = `route:${sourceId}:${targetId}`);
+    return true;
+  }
   selectCity(sourceId);
   const start = await waitForElement(`[data-action="start-route"][data-city-id="${CSS.escape(sourceId)}"]`);
   if (!start) return false;

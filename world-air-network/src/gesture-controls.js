@@ -309,6 +309,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
 
   async function beginRouteWorkflow(sourceId, targetId) {
     showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);
+    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     const sourceNode = await waitForElement(`[data-city-id="${CSS.escape(sourceId)}"]`);
     if (!sourceNode) return showGestureHint('Не удалось выбрать исходный аэропорт.');
     dispatchGestureClick(sourceNode);

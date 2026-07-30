@@ -80,6 +80,7 @@ let renderAccumulator = 0;
 let gameOverShown = false;
 
 bindEvents();
+installCommandApi();
 setSpeed(1);
 renderAll();
 requestAnimationFrame(frameLoop);
@@ -169,6 +170,53 @@ function bindEvents() {
       event.preventDefault();
       setSpeed(gameSpeed === 0 ? 1 : 0);
     }
+  });
+}
+
+function installCommandApi() {
+  const api = Object.freeze({
+    selectCity(cityId) {
+      if (!cityMap[cityId]) return false;
+      handleCityClick(cityId);
+      return true;
+    },
+    proposeRoute(sourceId, targetId) {
+      if (!cityMap[sourceId] || !cityMap[targetId] || sourceId === targetId) return false;
+      if (!state.airports[sourceId] || !state.airports[targetId]) return false;
+      routeDraftCityId = null;
+      selectedCityId = sourceId;
+      selectedRouteId = null;
+      activeTab = 'city';
+      syncTabs();
+      proposeRoute(sourceId, targetId);
+      return true;
+    },
+    getSnapshot() {
+      return {
+        selectedCityId,
+        selectedRouteId,
+        routeDraftCityId,
+        gameSpeed,
+        airports: Object.keys(state.airports),
+        routes: state.routes.map((route) => route.id),
+        money: state.money,
+        clock: state.clock
+      };
+    }
+  });
+
+  Object.defineProperty(window, 'AeroSphereGame', {
+    value: api,
+    configurable: false,
+    enumerable: false,
+    writable: false
+  });
+
+  window.addEventListener('aerosphere:select-city', (event) => {
+    api.selectCity(event.detail?.cityId);
+  });
+  window.addEventListener('aerosphere:propose-route', (event) => {
+    api.proposeRoute(event.detail?.sourceId, event.detail?.targetId);
   });
 }
 
