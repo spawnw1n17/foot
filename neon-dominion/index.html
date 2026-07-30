@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
   <meta name="theme-color" content="#070912">
-  <meta name="description" content="NEON DOMINION — премиальная браузерная стратегия свободного захвата баз.">
+  <meta name="description" content="NEON DOMINION: Territory — браузерная RTS с территориями, туманом войны, модернизацией и классами войск.">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="styles-v2.css">
-  <title>NEON DOMINION — Свободный фронт</title>
+  <link rel="stylesheet" href="styles-v4.css">
+  <title>NEON DOMINION — Territory</title>
 </head>
 <body>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -38,8 +39,8 @@
         <div class="objective-list" id="objectiveList"></div>
         <div class="selected-card" id="selectedCard"><div class="selected-empty">Выберите базу или группу</div></div>
         <div class="hint-card">
-          <span>СВОБОДНОЕ УПРАВЛЕНИЕ</span>
-          <p>Зажмите первую свою базу и, не отпуская, проведите через вторую, третью и остальные базы. Отпустите палец на цели — все выбранные базы отправят весь гарнизон и начнут новый набор с нуля.</p>
+          <span>ЦЕПНОЙ МАРШРУТ</span>
+          <p>Зажмите свою базу, проведите через другие источники, затем через одну или несколько целей. Выжившие силы продолжат маршрут; базы отправят весь гарнизон и начнут новый набор.</p>
         </div>
       </aside>
 
@@ -82,9 +83,9 @@
   <div class="overlay visible" id="homeOverlay">
     <div class="home-card glass">
       <div class="home-hero">
-        <div class="hero-badge">FREE FRONT UPDATE</div>
+        <div class="hero-badge">TERRITORY UPDATE</div>
         <h2>ЗАХВАТИ<br><span>ЦИФРОВОЙ МИР</span></h2>
-        <p>Свободное направление армий, групповые приказы, новые премиальные базы и глубокое тактическое управление.</p>
+        <p>Зоны влияния, туман войны, четыре класса войск, модернизация баз, перехваты и цепные маршруты через несколько целей.</p>
         <button class="primary-btn" id="campaignBtn">НАЧАТЬ КАМПАНИЮ <span>→</span></button>
         <button class="secondary-btn" id="quickBtn">БЫСТРАЯ БИТВА</button>
       </div>
