@@ -113,10 +113,13 @@ async function mobileScenario() {
   assert.equal(await page.locator('.mission-card').count(), 6);
   await page.locator('[data-meta-tab="season"]').click();
   assert.equal(await page.locator('.season-node').count(), 20);
-  await page.screenshot({ path: `${output}/mobile-arsenal-season.png`, fullPage: true });
+  await page.screenshot({ path: `${output}/mobile-arsenal-season.png` });
 
-  await page.evaluate(() => { window.NeonDominionQA.closeMeta(); window.NeonDominionQA.startLevel('crossfire'); window.NeonDominionQA.setUnit('heavy'); });
+  await page.evaluate(() => { window.NeonDominionQA.closeMeta(); window.scrollTo(0, 0); window.NeonDominionQA.startLevel('crossfire'); window.NeonDominionQA.setUnit('heavy'); });
+  await page.waitForFunction(() => !document.querySelector('#arsenalOverlay').classList.contains('visible'));
   await page.waitForFunction(() => window.NeonDominionQA.getState()?.nodes?.length >= 10);
+  await page.waitForTimeout(450);
+  await page.locator('#battlefield').scrollIntoViewIfNeeded();
   const box = await page.locator('#battlefield').boundingBox();
   const p0 = mapPoint(box, 165, 360);
   const p1 = mapPoint(box, 320, 170);
