@@ -29,12 +29,13 @@ jobs:
         run: |
           sed -i "s/sendMany: (fromIds, to, ratio = 0.5)/sendMany: (fromIds, to, ratio = 1)/" tools/apply-neon-territory.py
           python3 tools/apply-neon-territory.py
+          git checkout -- .github/workflows/pages.yml
       - name: Commit generated Territory files
         if: github.event_name == 'pull_request' && github.head_ref == 'neon-territory-v4'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add neon-dominion .github/workflows/pages.yml
+          git add neon-dominion
           if git diff --cached --quiet; then
             echo "Territory files are current"
           else
