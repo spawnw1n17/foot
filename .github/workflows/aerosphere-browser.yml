@@ -25,9 +25,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           fetch-depth: 0
 
-      - name: Apply smooth rendering patch once
+      - name: Keep overload advisor reactive
         run: |
-          python3 world-air-network/tests/apply-smooth-rendering.py
           python3 - <<'PY'
           from pathlib import Path
           path = Path('world-air-network/src/route-guard.js')
@@ -47,8 +46,8 @@ jobs:
           if ! git diff --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add world-air-network/src/game.js world-air-network/src/gesture-controls.js world-air-network/src/polish.js world-air-network/src/route-guard.js world-air-network/sw.js
-            git commit -m 'Сделать движение карты и самолётов плавным'
+            git add world-air-network/src/route-guard.js
+            git commit -m 'Обновлять радар перегрузки без пересборки карты'
             git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
           fi
 
