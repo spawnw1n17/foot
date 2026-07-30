@@ -25,7 +25,7 @@ jobs:
           node-version: 22
       - name: Validate main project
         run: npm run check
-      - name: Validate NEON DOMINION Arsenal
+      - name: Validate NEON DOMINION home profile
         working-directory: neon-dominion
         run: |
           set -e
@@ -33,18 +33,22 @@ jobs:
           test -s styles-v2.css
           test -s styles-v4.css
           test -s styles-v5.css
+          test -s styles-v6.css
+          test -s styles-v6-home.css
           test -s src/territory.js
           test -s src/meta.js
+          test -s src/home-profile.js
           for asset in assets/arena-background.svg assets/base-core.svg assets/base-factory.svg assets/base-fortress.svg assets/base-relay.svg assets/base-reactor.svg; do
             test -s "$asset"
           done
           grep -q "ARSENAL UPDATE" index.html
+          grep -q "styles-v6.css" index.html
+          grep -q "home-profile.js" index.html
           grep -q "sendRoute" src/engine.js
-          grep -q "TerritoryController" src/territory.js
           grep -q "MetaController" src/meta.js
-          grep -q "CATALOG" src/meta.js
+          grep -q "homeProfileDock" src/home-profile.js
           grep -q "getMeta" src/game.js
-          grep -q "neon-dominion-v5" sw.js
+          grep -q "neon-dominion-v6" sw.js
       - name: Validate UAV simulator
         run: |
           set -e
@@ -79,7 +83,7 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Verify published endpoints and Arsenal assets
+      - name: Verify published endpoints and main profile assets
         run: |
           set -e
           ROOT="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
@@ -87,15 +91,15 @@ jobs:
           NEON="$ROOT/neon-dominion"
           curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors "$UAV/" | grep -q "Аврора Полёт"
           curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors "$NEON/" | grep -q "NEON DOMINION"
-          for asset in styles.css styles-v2.css styles-v4.css styles-v5.css src/maps.js src/engine.js src/territory.js src/meta.js src/game.js sw.js manifest.webmanifest assets/icon.svg assets/arena-background.svg assets/base-core.svg assets/base-factory.svg assets/base-fortress.svg assets/base-relay.svg assets/base-reactor.svg; do
+          for asset in styles.css styles-v2.css styles-v4.css styles-v5.css styles-v6.css styles-v6-home.css src/maps.js src/engine.js src/territory.js src/meta.js src/home-profile.js src/game.js sw.js manifest.webmanifest assets/icon.svg assets/arena-background.svg assets/base-core.svg assets/base-factory.svg assets/base-fortress.svg assets/base-relay.svg assets/base-reactor.svg; do
             curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors "$NEON/$asset" >/dev/null
           done
           curl --fail --location "$NEON/src/game.js" | grep -q "getMeta"
           curl --fail --location "$NEON/src/meta.js" | grep -q "MetaController"
-          curl --fail --location "$NEON/src/meta.js" | grep -q "SEASON_REWARDS"
-          curl --fail --location "$NEON/sw.js" | grep -q "neon-dominion-v5"
-          curl --fail --location "$NEON/" | grep -q "styles-v5.css"
-          echo "Verified Arsenal: $NEON/"
+          curl --fail --location "$NEON/src/home-profile.js" | grep -q "homeProfileDock"
+          curl --fail --location "$NEON/sw.js" | grep -q "neon-dominion-v6"
+          curl --fail --location "$NEON/" | grep -q "styles-v6-home.css"
+          echo "Verified main profile: $NEON/"
       - name: Open published games in Chromium
         run: |
           set -e
@@ -109,8 +113,10 @@ jobs:
           grep -q 'id="territoryConsole"' "$RUNNER_TEMP/neon-dom.html"
           grep -q 'id="playerProfileBtn"' "$RUNNER_TEMP/neon-dom.html"
           grep -q 'id="arsenalOverlay"' "$RUNNER_TEMP/neon-dom.html"
-          grep -q 'data-meta-tab="shop"' "$RUNNER_TEMP/neon-dom.html"
-          grep -q 'data-meta-tab="season"' "$RUNNER_TEMP/neon-dom.html"
+          grep -q 'id="homeProfileDock"' "$RUNNER_TEMP/neon-dom.html"
+          grep -q 'class="home-profile-main"' "$RUNNER_TEMP/neon-dom.html"
+          grep -q 'data-home-tab="shop"' "$RUNNER_TEMP/neon-dom.html"
+          grep -q 'data-home-tab="season"' "$RUNNER_TEMP/neon-dom.html"
           "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=1440,900 --virtual-time-budget=9000 --screenshot="$RUNNER_TEMP/neon-desktop.png" "$NEON"
           "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=390,844 --force-device-scale-factor=1 --virtual-time-budget=9000 --screenshot="$RUNNER_TEMP/neon-mobile.png" "$NEON"
           test -s "$RUNNER_TEMP/neon-desktop.png"
@@ -128,4 +134,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create --repo "${{ github.repository }}" --title "[AUTO] NEON DOMINION Arsenal опубликована ${{ github.sha }}" --body "Arsenal и профиль игрока опубликованы и проверены в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"
+          gh issue create --repo "${{ github.repository }}" --title "[AUTO] NEON DOMINION профиль на главной опубликован ${{ github.sha }}" --body "Главный профиль, магазин и Arsenal опубликованы и проверены в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"
