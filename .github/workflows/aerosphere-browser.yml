@@ -54,12 +54,16 @@ jobs:
           QA_OUTPUT_DIR: artifacts/aerosphere-qa
         run: node world-air-network/tests/browser-check.mjs
 
-      - name: Upload QA report and screenshots
+      - name: Upload QA report, screenshots and checked sources
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: aerosphere-browser-qa-${{ github.sha }}
           path: |
             artifacts/aerosphere-qa
+            world-air-network/src/game.js
+            world-air-network/src/gesture-controls.js
+            world-air-network/src/command-bridge.js
+            world-air-network/tests/browser-check.mjs
             ${{ runner.temp }}/aerosphere-server.log
           retention-days: 14
