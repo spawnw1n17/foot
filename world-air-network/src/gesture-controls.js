@@ -84,7 +84,10 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
     cancelInertia();
 
     const cityNode = event.target.closest?.('[data-city-id]');
-    const sourceCityId = event.button === 0 && cityNode?.classList.contains('open') ? cityNode.dataset.cityId : null;
+    const nearbyCity = findNearestCityOnScreen(event.clientX, event.clientY, ROUTE_DROP_RADIUS_PX);
+    const sourceCityId = event.button === 0
+      ? (cityNode?.classList.contains('open') ? cityNode.dataset.cityId : (nearbyCity && isOpenCity(nearbyCity.id) ? nearbyCity.id : null))
+      : null;
     const canPan = mapView.zoom > 1.01 || event.button === 1;
     if (!sourceCityId && !canPan) return;
 
@@ -309,6 +312,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
 
   async function beginRouteWorkflow(sourceId, targetId) {
     showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);
+    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     const sourceNode = await waitForElement(`[data-city-id="${CSS.escape(sourceId)}"]`);
     if (!sourceNode) return showGestureHint('Не удалось выбрать исходный аэропорт.');
