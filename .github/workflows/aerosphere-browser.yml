@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   browser-qa:
@@ -21,6 +21,24 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Apply smooth rendering patch once
+        run: |
+          python3 world-air-network/tests/apply-smooth-rendering.py
+          node --check world-air-network/src/game.js
+          node --check world-air-network/src/gesture-controls.js
+          node --check world-air-network/src/polish.js
+          node --check world-air-network/sw.js
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add world-air-network/src/game.js world-air-network/src/gesture-controls.js world-air-network/src/polish.js world-air-network/sw.js
+            git commit -m 'Сделать движение карты и самолётов плавным'
+            git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -54,6 +72,12 @@ jobs:
           QA_OUTPUT_DIR: artifacts/aerosphere-qa
         run: node world-air-network/tests/browser-check.mjs
 
+      - name: Measure desktop and mobile frame smoothness
+        env:
+          AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
+          QA_OUTPUT_DIR: artifacts/aerosphere-qa
+        run: node world-air-network/tests/smoothness-check.mjs
+
       - name: Upload QA report, screenshots and checked sources
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,5 +89,6 @@ jobs:
             world-air-network/src/gesture-controls.js
             world-air-network/src/command-bridge.js
             world-air-network/tests/browser-check.mjs
+            world-air-network/tests/smoothness-check.mjs
             ${{ runner.temp }}/aerosphere-server.log
           retention-days: 14
