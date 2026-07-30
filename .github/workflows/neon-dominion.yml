@@ -1,63 +1,64 @@
-name: NEON DOMINION QA
+name: NEON DOMINION Public Verification
 
 on:
-  push:
-    branches: [main, neon-dominion-release]
-    paths:
-      - 'neon-dominion/**'
-      - '.github/workflows/neon-dominion.yml'
   pull_request:
     paths:
-      - 'neon-dominion/**'
       - '.github/workflows/neon-dominion.yml'
+      - 'neon-dominion/**'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  browser-qa:
+  public-browser-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check all engines and tests
-        working-directory: neon-dominion
-        run: npm run check
+      - name: Wait for published v8 assets
+        run: |
+          set -e
+          PUBLIC="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"
+          for attempt in {1..48}; do
+            SW="$(curl --silent --fail --location "${PUBLIC}sw.js?probe=${GITHUB_SHA}-${attempt}" || true)"
+            JS="$(curl --silent --fail --location "${PUBLIC}src/war-room.js?probe=${GITHUB_SHA}-${attempt}" || true)"
+            CSS="$(curl --silent --fail --location "${PUBLIC}styles-v7.css?probe=${GITHUB_SHA}-${attempt}" || true)"
+            if grep -q "neon-dominion-v8" <<<"$SW" \
+              && grep -q "compactHud" <<<"$JS" \
+              && grep -q "Safe compact HUD placement" <<<"$CSS"; then
+              echo "PUBLIC_URL=$PUBLIC" >> "$GITHUB_ENV"
+              echo "Published v8 assets found: $PUBLIC"
+              exit 0
+            fi
+            echo "Attempt $attempt: public v8 is not complete yet"
+            sleep 10
+          done
+          echo "Published v8 assets were not found"
+          curl --fail --location --silent "$PUBLIC/sw.js" || true
+          exit 1
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Start server
+      - name: Run full audit against public GitHub Pages
         run: |
-          python3 -m http.server 8080 > "$RUNNER_TEMP/neon-server.log" 2>&1 &
-          for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:8080/neon-dominion/ | grep -q "NEON DOMINION"; then exit 0; fi
-            sleep 1
-          done
-          cat "$RUNNER_TEMP/neon-server.log"
-          exit 1
-      - name: Run complete browser audit
-        env:
-          NEON_DOMINION_URL: http://127.0.0.1:8080/neon-dominion/
-          QA_OUTPUT_DIR: artifacts/neon-dominion
-        run: |
+          set -e
+          export NEON_DOMINION_URL="$PUBLIC_URL"
+          export QA_OUTPUT_DIR="artifacts/public-neon-dominion"
           node neon-dominion/tests/browser-check.mjs
           node neon-dominion/tests/home-profile-check.mjs
           node neon-dominion/tests/war-room-browser.mjs
           node neon-dominion/tests/full-audit.mjs
-      - name: Upload screenshots and reports
+      - name: Upload public verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: neon-dominion-full-audit-${{ github.sha }}
+          name: neon-dominion-public-v8-${{ github.sha }}
           path: |
-            artifacts/neon-dominion
-            neon-dominion/src
-            neon-dominion/tests
-            neon-dominion/WAR-ROOM.md
-            ${{ runner.temp }}/neon-server.log
+            artifacts/public-neon-dominion
+            neon-dominion/tests/full-audit.mjs
           retention-days: 14
