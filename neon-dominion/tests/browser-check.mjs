@@ -47,7 +47,7 @@ async function desktopScenario() {
 
   const state = await page.evaluate(() => window.NeonDominionQA.getState());
   assert.ok(state.stats.sent > 0);
-  assert.ok(state.convoys.some((convoy) => Math.abs(convoy.curve) >= 0));
+  assert.ok(state.convoys.some((convoy) => Number.isFinite(convoy.curve)));
   assert.equal(errors.length, 0);
 
   const performanceData = await page.evaluate(() => ({ longTasks: window.__qaLongTasks || [] }));
@@ -79,12 +79,12 @@ async function mobileScenario() {
 
   const box = await page.locator('#battlefield').boundingBox();
   assert.ok(box);
-  const p0 = mapPoint(box, 165, 360);
   const p1 = mapPoint(box, 320, 170);
   const r0 = mapPoint(box, 1020, 190);
 
+  const initialSelection = await page.evaluate(() => window.NeonDominionQA.getSelection());
+  assert.deepEqual(initialSelection, ['p0']);
   await page.locator('#groupSelectBtn').click();
-  await page.touchscreen.tap(p0.x, p0.y);
   await page.touchscreen.tap(p1.x, p1.y);
   await page.waitForFunction(() => window.NeonDominionQA.getSelection().length === 2);
   await page.locator('#groupSendBtn').click();
@@ -108,6 +108,7 @@ async function mobileScenario() {
   report.mobile = {
     width: `${dimensions.scroll}/${dimensions.client}`,
     canvas: dimensions.canvas,
+    initialSelection,
     selection: await page.evaluate(() => window.NeonDominionQA.getSelection()),
     groupConvoys: state.convoys.filter((convoy) => convoy.to === 'r0').length,
     groupOrders: state.stats.groupOrders,
