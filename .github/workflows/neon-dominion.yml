@@ -28,16 +28,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install WAR ROOM payload
+      - name: Install WAR ROOM payload or patch
         id: install
         run: |
           set -e
+          changed=false
+          message="Обновить NEON DOMINION WAR ROOM"
           if [ -f neon-dominion/tools/install_war_room.py ]; then
             python3 neon-dominion/tools/install_war_room.py
+            changed=true
+            message="Установить NEON DOMINION WAR ROOM"
+          elif [ -f neon-dominion/tools/patch_war_room.py ]; then
+            python3 neon-dominion/tools/patch_war_room.py
+            changed=true
+            message="Исправить рендер новых построек WAR ROOM"
+          fi
+          if [ "$changed" = true ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add -A
-            git commit -m "Установить NEON DOMINION WAR ROOM"
+            git commit -m "$message"
             git push origin HEAD:${{ github.head_ref || github.ref_name }}
             echo "installed=true" >> "$GITHUB_OUTPUT"
           else
