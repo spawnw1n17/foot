@@ -106,11 +106,12 @@ jobs:
 
           gestures = root / 'src/gesture-controls.js'
           source = gestures.read_text()
-          source = source.replace(
-              "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n",
-              "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;\n",
-              1
-          )
+          if 'window.AeroSphereGame?.proposeRoute(sourceId, targetId)' not in source:
+              source = source.replace(
+                  "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n",
+                  "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;\n",
+                  1
+              )
           source = source.replace(
               "    const cityNode = event.target.closest?.('[data-city-id]');\n    const sourceCityId = event.button === 0 && cityNode?.classList.contains('open') ? cityNode.dataset.cityId : null;\n",
               "    const cityNode = event.target.closest?.('[data-city-id]');\n    const nearbyCity = findNearestCityOnScreen(event.clientX, event.clientY, ROUTE_DROP_RADIUS_PX);\n    const sourceCityId = event.button === 0\n      ? (cityNode?.classList.contains('open') ? cityNode.dataset.cityId : (nearbyCity && isOpenCity(nearbyCity.id) ? nearbyCity.id : null))\n      : null;\n",
@@ -132,7 +133,7 @@ jobs:
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add world-air-network/src/game.js world-air-network/src/command-bridge.js world-air-network/src/gesture-controls.js
-            git commit -m 'Не блокировать подтверждение после перетаскивания'
+            git commit -m 'Стабилизировать прямое управление жестами'
             git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
           fi
 
@@ -162,6 +163,12 @@ jobs:
           cat "$RUNNER_TEMP/aerosphere-server.log"
           exit 1
 
+      - name: Diagnose route drag events
+        env:
+          AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
+          QA_OUTPUT_DIR: artifacts/aerosphere-qa
+        run: node world-air-network/tests/gesture-diagnostic.mjs
+
       - name: Play complete browser scenario
         env:
           AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
@@ -179,5 +186,6 @@ jobs:
             world-air-network/src/gesture-controls.js
             world-air-network/src/command-bridge.js
             world-air-network/tests/browser-check.mjs
+            world-air-network/tests/gesture-diagnostic.mjs
             ${{ runner.temp }}/aerosphere-server.log
           retention-days: 14
