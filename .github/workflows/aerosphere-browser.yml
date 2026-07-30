@@ -111,6 +111,11 @@ jobs:
               "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;\n",
               1
           )
+          source = source.replace(
+              "    const cityNode = event.target.closest?.('[data-city-id]');\n    const sourceCityId = event.button === 0 && cityNode?.classList.contains('open') ? cityNode.dataset.cityId : null;\n",
+              "    const cityNode = event.target.closest?.('[data-city-id]');\n    const nearbyCity = findNearestCityOnScreen(event.clientX, event.clientY, ROUTE_DROP_RADIUS_PX);\n    const sourceCityId = event.button === 0\n      ? (cityNode?.classList.contains('open') ? cityNode.dataset.cityId : (nearbyCity && isOpenCity(nearbyCity.id) ? nearbyCity.id : null))\n      : null;\n",
+              1
+          )
           gestures.write_text(source)
           PY
 
@@ -122,7 +127,7 @@ jobs:
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add world-air-network/src/game.js world-air-network/src/command-bridge.js world-air-network/src/gesture-controls.js
-            git commit -m 'Подключить прямой API управления игровым движком'
+            git commit -m 'Распознавать аэропорт под маршрутами и самолётами'
             git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
           fi
 
