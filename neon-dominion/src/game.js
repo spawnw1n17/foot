@@ -1,6 +1,7 @@
 import { MAPS, getMap, FACTIONS, NODE_TYPES } from './maps.js';
 import { DominionEngine } from './engine.js';
 import { TerritoryController } from './territory.js';
+import { MetaController } from './meta.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -90,6 +91,10 @@ const territory = new TerritoryController({
     syncSelected(true);
     syncGroupControls();
   },
+});
+const meta = new MetaController({
+  notice: (text, type = '') => notice(text, type),
+  onChange: () => {},
 });
 const particles = Array.from({ length: 96 }, (_, index) => ({
   x: (index * 137) % 1200,
@@ -217,6 +222,7 @@ function startLevel(id, options = {}) {
   });
   selectedIds = new Set(engine.factionNodes('player').slice(0, 1).map((node) => node.id));
   territory.start(engine);
+  const activeCommander = meta.beginBattle(engine);
   primarySelectedId = [...selectedIds][0] || null;
   selectedSignature = '';
   barsSignature = '';
@@ -237,7 +243,8 @@ function startLevel(id, options = {}) {
   dom.objectives.innerHTML = currentMap.objectives.map((objective) => `<div class="objective">${objective}</div>`).join('');
   dom.log.innerHTML = '';
   log(`Операция «${currentMap.title}» началась`);
-  notice('Зажмите базу, проведите через другие свои базы и отпустите на цели.', 'good');
+  log(`${activeCommander.name}: ${activeCommander.role}`);
+  notice(`Командир: ${activeCommander.name}. Зажмите базу и постройте цепной маршрут.`, 'good');
   setSpeed(1);
   resize();
   syncUI(true);
@@ -249,6 +256,7 @@ function goHome() {
   engine = null;
   currentMap = null;
   territory.stop();
+  meta.refresh();
   selectedIds.clear();
   primarySelectedId = null;
   dom.pause.classList.remove('visible');
@@ -734,6 +742,7 @@ function drawNodes(now) {
       ctx.stroke();
     }
     ctx.shadowBlur = 0;
+    meta.decorateBase(ctx, node, config, faction, now);
 
     ctx.globalCompositeOperation = 'screen';
     ctx.globalAlpha = node.owner === 'neutral' ? 0.25 : 0.55;
@@ -803,6 +812,7 @@ function drawConvoys() {
     if (!territory.isConvoyVisible(convoy)) continue;
     const geometry = convoyGeometry(convoy);
     const faction = FACTIONS[convoy.owner];
+    meta.decorateConvoy(ctx, convoy, geometry);
 
     ctx.strokeStyle = `${faction.color}38`;
     ctx.lineWidth = 1.5;
@@ -1052,6 +1062,18 @@ function showResult() {
   } else {
     beep(100, 0.28);
   }
+  const totalStars = Object.values(profile.completed).reduce((sum, value) => sum + value, 0);
+  const reward = meta.completeBattle({
+    victory,
+    stars,
+    totalStars,
+    order: currentMap.order,
+    mapId: currentMap.id,
+    time: engine.time,
+    stats: engine.stats,
+    longestChain: engine.stats.chainedRoutes,
+  });
+  dom.resultStats.insertAdjacentHTML('beforeend', `<div class="result-reward"><span>НАГРАДА ПРОФИЛЯ</span><b>◈ ${reward.credits}</b><b>✦ ${reward.shards}</b><b>${reward.xp} XP</b></div>`);
   dom.result.classList.add('visible');
 }
 
@@ -1105,6 +1127,14 @@ window.NeonDominionQA = {
     syncGroupControls();
   },
   getSelection: () => [...selectedIds],
+  openMeta: (tab = 'profile') => meta.open(tab),
+  closeMeta: () => meta.close(),
+  getMeta: () => meta.snapshot(),
+  resetMeta: () => meta.resetForQA(),
+  buyMeta: (id) => meta.buy(id),
+  equipMeta: (id) => meta.equip(id),
+  chooseCommander: (id) => meta.chooseCommander(id),
+  completeMetaBattle: (battle) => meta.completeBattle(battle),
   assetsReady: () => visualAssets.background.complete
     && visualAssets.background.naturalWidth > 0
     && Object.values(visualAssets.bases).every((image) => image.complete && image.naturalWidth > 0),
