@@ -9,7 +9,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  issues: write
 
 concurrency:
   group: pages
@@ -25,20 +24,6 @@ jobs:
           node-version: 22
       - name: Validate main project
         run: npm run check
-      - name: Validate AeroSphere
-        run: |
-          set -e
-          cd world-air-network
-          npm run check
-          for file in src/polish.js src/route-guard.js src/gesture-controls.js src/command-bridge.js sw.js; do
-            node --check "$file"
-          done
-          test -s polish.css
-          grep -q "installRiskAdvisor" src/route-guard.js
-          grep -q "installOriginalStyleMapControls" src/gesture-controls.js
-          grep -q "route-drag-preview" src/gesture-controls.js
-          grep -q "installCommandApi" src/game.js
-          grep -q "AeroSphereGame" src/command-bridge.js
       - name: Validate UAV simulator
         run: |
           set -e
@@ -96,21 +81,7 @@ jobs:
           done
           echo "Verified assets: $BASE/"
 
-      - name: Verify AeroSphere endpoint and all runtime assets
-        run: |
-          set -e
-          BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network"
-          curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors --max-time 20 "$BASE/" | grep -q "AeroSphere"
-          for asset in styles.css polish.css src/data.js src/engine.js src/game.js src/polish.js src/gesture-controls.js src/command-bridge.js src/route-guard.js sw.js manifest.webmanifest assets/icon.svg; do
-            curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/$asset" >/dev/null
-          done
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/route-guard.js" | grep -q "installRiskAdvisor"
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/gesture-controls.js" | grep -q "route-drag-preview"
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/game.js" | grep -q "installCommandApi"
-          curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors --max-time 20 "$BASE/src/command-bridge.js" | grep -q "AeroSphereGame"
-          echo "Verified AeroSphere: $BASE/"
-
-      - name: Open published games in Chromium
+      - name: Open published UAV simulator in Chromium
         run: |
           set -e
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
@@ -139,64 +110,14 @@ jobs:
             --window-size=1440,900 \
             --virtual-time-budget=9000 \
             --screenshot="$RUNNER_TEMP/uav-desktop.png" "$UAV_BASE"
-
-          AERO_BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network/?build=${{ github.sha }}"
-          "$CHROME" \
-            --headless=new \
-            --no-sandbox \
-            --disable-dev-shm-usage \
-            --disable-gpu \
-            --hide-scrollbars \
-            --window-size=1440,900 \
-            --virtual-time-budget=12000 \
-            --dump-dom "$AERO_BASE" > "$RUNNER_TEMP/aerosphere-dom.html"
-          grep -q 'AeroSphere' "$RUNNER_TEMP/aerosphere-dom.html"
-          grep -q 'id="worldMap"' "$RUNNER_TEMP/aerosphere-dom.html"
-          grep -q 'id="moneyStat"' "$RUNNER_TEMP/aerosphere-dom.html"
-          grep -q 'id="citySearch"' "$RUNNER_TEMP/aerosphere-dom.html"
-          grep -q 'gesture-layer' "$RUNNER_TEMP/aerosphere-dom.html"
-          grep -q 'risk-advisor' "$RUNNER_TEMP/aerosphere-dom.html"
-          "$CHROME" \
-            --headless=new \
-            --no-sandbox \
-            --disable-dev-shm-usage \
-            --disable-gpu \
-            --hide-scrollbars \
-            --window-size=1440,900 \
-            --virtual-time-budget=9000 \
-            --screenshot="$RUNNER_TEMP/aerosphere-desktop.png" "$AERO_BASE"
-          "$CHROME" \
-            --headless=new \
-            --no-sandbox \
-            --disable-dev-shm-usage \
-            --disable-gpu \
-            --hide-scrollbars \
-            --window-size=390,844 \
-            --force-device-scale-factor=1 \
-            --virtual-time-budget=9000 \
-            --screenshot="$RUNNER_TEMP/aerosphere-mobile.png" "$AERO_BASE"
           test -s "$RUNNER_TEMP/uav-desktop.png"
-          test -s "$RUNNER_TEMP/aerosphere-desktop.png"
-          test -s "$RUNNER_TEMP/aerosphere-mobile.png"
-          echo "Chromium tests passed"
+          echo "Chromium test passed"
 
-      - name: Upload browser screenshots
+      - name: Upload browser screenshot
         uses: actions/upload-artifact@v4
         with:
           name: browser-games-check-${{ github.sha }}
           path: |
             ${{ runner.temp }}/uav-desktop.png
             ${{ runner.temp }}/uav-dom.html
-            ${{ runner.temp }}/aerosphere-desktop.png
-            ${{ runner.temp }}/aerosphere-mobile.png
-            ${{ runner.temp }}/aerosphere-dom.html
           retention-days: 14
-
-      - name: Record successful AeroSphere publication
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh issue create \
-            --repo "${{ github.repository }}" \
-            --title "[AUTO] AeroSphere опубликована ${{ github.sha }}" \
-            --body "AeroSphere опубликована и проверена в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/world-air-network/"
