@@ -733,7 +733,7 @@ function drawNodes(now) {
     const selected = selectedIds.has(node.id);
     const primary = node.id === primarySelectedId;
     const pulse = 1 + Math.sin(now * 0.003 + node.x) * 0.018;
-    const asset = visualAssets.bases[node.type];
+    const asset = visualAssets.bases[node.type] || visualAssets.bases.core;
 
     ctx.save();
     ctx.translate(node.x, node.y);
