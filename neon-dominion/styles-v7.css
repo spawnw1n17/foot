@@ -21,3 +21,38 @@
 @media(max-width:620px){.war-room-header h2{font-size:20px}.war-room-header p{display:none}.war-room-nav button{padding:9px 10px;font-size:7px}.world-layout{min-height:0}.world-map-card{padding:10px}.world-map{height:390px}.region-brief{padding:16px}.mode-grid{grid-template-columns:1fr}.mode-card{min-height:215px}.survival-hero{grid-template-columns:1fr;padding:20px}.survival-record{min-height:170px}.wave-preview{grid-template-columns:repeat(2,1fr)}.sandbox-grid{grid-template-columns:1fr}.editor-canvas{height:390px}.record-summary{grid-template-columns:repeat(2,1fr)}.medal-grid{grid-template-columns:1fr}.record-row{grid-template-columns:1.2fr repeat(2,.7fr)}.record-row>*:nth-child(4),.record-row>*:nth-child(5){display:none}.identity-preview{align-items:flex-start;padding:18px}.identity-preview>i{width:72px;height:72px;border-radius:22px;font-size:31px}.identity-preview h3{font-size:19px}.identity-settings{grid-template-columns:1fr}.identity-settings .war-section-head,.identity-settings .war-primary{grid-column:1}.showcase-editor>div{grid-template-columns:repeat(2,1fr)}.rotation-grid{grid-template-columns:1fr}.audio-layout{grid-template-columns:1fr}.audio-layout>div{grid-column:1}.audio-layout .war-primary{width:100%}.home-arsenal-actions{grid-template-columns:repeat(6,1fr)!important}.home-arsenal-actions button>span{font-size:5px!important}.war-battle-panel{max-height:47%}.tactic-row,.convoy-command{grid-template-columns:1fr 1fr}.tactic-row select,.convoy-command select{grid-column:1/-1}.planner-order-form{grid-template-columns:1fr}.tactical-planner{padding:12px}.war-section-head{align-items:flex-start;flex-direction:column}.editor-actions{justify-content:flex-start}}
 .convoy-command{grid-template-columns:minmax(110px,1fr) repeat(3,auto)}.convoy-command button.active{border-color:#ffd66b;background:rgba(255,214,107,.08);color:#ffd66b}
 @media(min-width:621px){.convoy-command select{grid-column:1/-1}.convoy-command{grid-template-columns:repeat(6,1fr)}}
+
+
+/* Full Chromium audit fixes — mobile HUD, landscape viewport and visual states */
+body.war-room-open{overflow:hidden}
+.war-room-overlay{background:rgba(0,2,7,.93)}
+.world-region.locked{opacity:.5;filter:grayscale(.72)}
+.world-region.locked>i{color:#78879c;background:rgba(255,255,255,.055)}
+.war-primary:disabled{opacity:.34;filter:grayscale(.9);box-shadow:none!important;background:rgba(91,103,123,.12)!important;color:#718096!important;border-color:rgba(130,145,169,.15)!important}
+@media(max-width:900px){
+  .war-battle-panel.collapsed{width:min(330px,calc(100% - 16px));max-height:none}
+  .war-battle-panel.collapsed>header{border-bottom:0}
+}
+@media(max-height:520px) and (orientation:landscape){
+  html,body{width:100%;height:100%;min-height:0;overflow:hidden}
+  .app-shell{height:100dvh;min-height:0;padding:5px 7px}
+  .topbar{display:flex;min-height:52px;height:52px;padding:5px 8px;gap:7px;border-radius:14px}
+  .brand-wrap{min-width:0;gap:3px}
+  .brand-mark{transform:scale(.74);transform-origin:left center;margin-right:-9px}
+  .brand-wrap .eyebrow{display:none}
+  .brand-wrap h1{margin:0;font-size:12px;white-space:nowrap}
+  .top-actions{margin-left:auto;gap:4px}
+  .player-profile-chip{min-width:0;width:40px;height:40px;padding:3px;border-radius:12px;overflow:hidden}
+  .player-profile-chip>i{width:32px;height:32px;border-radius:9px}
+  .player-profile-chip>span,.player-profile-chip>em{display:none}
+  .icon-btn{width:38px;height:38px;border-radius:11px}
+  .game-layout{height:calc(100dvh - 62px);min-height:0;margin-top:5px}
+  .battlefield-wrap{height:100%;min-height:0;border-radius:14px}
+  .war-battle-panel{top:auto;right:8px;bottom:48px;width:min(300px,calc(100% - 16px));max-height:calc(100% - 56px)}
+  .war-battle-panel.collapsed{width:min(280px,calc(100% - 16px))}
+  .war-battle-panel>header{padding:6px}
+  .speed-control{left:8px;bottom:8px}
+  .mobile-panel-toggle{right:8px;bottom:8px;padding:7px 10px}
+  .notification-stack{top:8px;right:8px;max-width:245px}
+  .notice{padding:8px 10px;font-size:9px}
+}

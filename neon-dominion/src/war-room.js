@@ -180,10 +180,14 @@ export class WarRoomController {
   open(tab = 'world') {
     this.activeTab = tab;
     this.overlay.classList.add('visible');
+    document.body.classList.add('war-room-open');
     this.render();
   }
 
-  close() { this.overlay.classList.remove('visible'); }
+  close() {
+    this.overlay.classList.remove('visible');
+    document.body.classList.remove('war-room-open');
+  }
 
   refresh() {
     this.state = normalizeWarRoomState(this.state);
@@ -560,6 +564,8 @@ export class WarRoomController {
     if (this.battle.boss) this.setupBoss(engine, this.battle.boss);
     if (mode === 'escort') this.setupEscort(engine);
     this.hud.hidden = false;
+    const compactHud = matchMedia('(max-width: 900px)').matches || (innerHeight <= 520 && innerWidth > innerHeight);
+    this.hud.classList.toggle('collapsed', compactHud);
     this.renderBattleHud(true);
     this.ensureAudio();
     this.speak(`${MISSION_MODES[mode]?.name || 'Операция'} началась`);

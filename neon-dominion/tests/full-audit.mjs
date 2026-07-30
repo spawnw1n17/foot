@@ -91,6 +91,8 @@ async function desktopAudit() {
     await assertUniqueIds(page);
     await assertButtonsNamed(page, '#arsenalOverlay');
   }
+  await page.evaluate(() => window.NeonDominionQA.openMeta('profile'));
+  await page.waitForSelector('#profileNameInput');
   await page.locator('#profileNameInput').fill('Аудитор');
   await page.locator('[data-meta-action="save-name"]').click();
   await page.waitForFunction(() => window.NeonDominionQA.getMeta().name === 'Аудитор');
@@ -99,6 +101,9 @@ async function desktopAudit() {
   await page.locator('#warRoomHomeBtn').click();
   await page.waitForFunction(() => document.querySelector('#warRoomOverlay')?.classList.contains('visible'));
   assert.equal(await page.locator('#warRoomNav [data-war-tab]').count(), 9);
+  assert.equal(await page.evaluate(() => document.body.classList.contains('war-room-open')), true);
+  const lockedOpacity = Number(await page.locator('.world-region.locked').first().evaluate((node) => getComputedStyle(node).opacity));
+  assert.ok(lockedOpacity >= .45, `locked regions are too dim: ${lockedOpacity}`);
   for (const tab of ['world', 'modes', 'survival', 'sandbox', 'editor', 'records', 'identity', 'arsenal', 'audio']) await openWarTab(page, tab);
 
   await openWarTab(page, 'sandbox');
@@ -228,6 +233,9 @@ async function mobileAudit() {
   const shell = await dimensions(page, '.war-room-shell');
   assert.ok(shell.width <= 390);
   assert.equal(await page.locator('#warRoomNav [data-war-tab]').count(), 9);
+  assert.equal(await page.evaluate(() => document.body.classList.contains('war-room-open')), true);
+  const lockedOpacity = Number(await page.locator('.world-region.locked').first().evaluate((node) => getComputedStyle(node).opacity));
+  assert.ok(lockedOpacity >= .45, `locked regions are too dim: ${lockedOpacity}`);
   for (const tab of ['world', 'modes', 'survival', 'sandbox', 'editor', 'records', 'identity', 'arsenal', 'audio']) await openWarTab(page, tab);
 
   await openWarTab(page, 'editor');
@@ -244,7 +252,10 @@ async function mobileAudit() {
   await page.waitForSelector('#warBattlePanel:not([hidden])');
   const hud = await dimensions(page, '#warBattlePanel');
   assert.ok(hud.width <= 390);
+  assert.equal(await page.locator('#warBattlePanel').evaluate((node) => node.classList.contains('collapsed')), true);
+  assert.ok(hud.height < 90, `mobile HUD should start collapsed, got ${hud.height}px`);
   await page.locator('[data-battle-action="toggle-hud"]').tap();
+  assert.equal(await page.locator('#warBattlePanel').evaluate((node) => node.classList.contains('collapsed')), false);
   await page.locator('[data-battle-action="toggle-hud"]').tap();
   await assertNoDocumentOverflow(page);
   await page.screenshot({ path: `${output}/full-audit-mobile-battle.png`, fullPage: true });
@@ -266,11 +277,14 @@ async function landscapeAudit() {
   await page.waitForSelector('#warBattlePanel:not([hidden])');
   const canvas = await dimensions(page, '#battlefield');
   assert.ok(canvas.width > 400 && canvas.height > 200);
+  const viewportFit = await page.evaluate(() => ({ scroll: document.documentElement.scrollHeight, client: document.documentElement.clientHeight }));
+  assert.ok(viewportFit.scroll <= viewportFit.client + 2, `landscape vertical overflow ${viewportFit.scroll}/${viewportFit.client}`);
+  assert.equal(await page.locator('#warBattlePanel').evaluate((node) => node.classList.contains('collapsed')), true);
   await assertNoDocumentOverflow(page);
   await page.screenshot({ path: `${output}/full-audit-landscape-battle.png`, fullPage: true });
   assert.equal(diagnostics.errors.length, 0);
   assert.equal(diagnostics.badResponses.length, 0);
-  report.landscape = { canvas, diagnostics };
+  report.landscape = { canvas, viewportFit, diagnostics };
   await page.close();
 }
 
