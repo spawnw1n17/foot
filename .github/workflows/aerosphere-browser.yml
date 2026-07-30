@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   browser-qa:
@@ -21,121 +21,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-          fetch-depth: 0
-
-      - name: Apply direct game command API once
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          root = Path('world-air-network')
-          game = root / 'src/game.js'
-          source = game.read_text()
-          if 'function installCommandApi()' not in source:
-              source = source.replace('bindEvents();\nsetSpeed(1);', 'bindEvents();\ninstallCommandApi();\nsetSpeed(1);')
-              marker = 'function frameLoop(now) {\n'
-              api = '''function installCommandApi() {
-            const api = Object.freeze({
-              selectCity(cityId) {
-                if (!cityMap[cityId]) return false;
-                handleCityClick(cityId);
-                return true;
-              },
-              proposeRoute(sourceId, targetId) {
-                if (!cityMap[sourceId] || !cityMap[targetId] || sourceId === targetId) return false;
-                if (!state.airports[sourceId] || !state.airports[targetId]) return false;
-                routeDraftCityId = null;
-                selectedCityId = sourceId;
-                selectedRouteId = null;
-                activeTab = 'city';
-                syncTabs();
-                proposeRoute(sourceId, targetId);
-                return true;
-              },
-              getSnapshot() {
-                return {
-                  selectedCityId,
-                  selectedRouteId,
-                  routeDraftCityId,
-                  gameSpeed,
-                  airports: Object.keys(state.airports),
-                  routes: state.routes.map((route) => route.id),
-                  money: state.money,
-                  clock: state.clock
-                };
-              }
-            });
-
-            Object.defineProperty(window, 'AeroSphereGame', {
-              value: api,
-              configurable: false,
-              enumerable: false,
-              writable: false
-            });
-
-            window.addEventListener('aerosphere:select-city', (event) => {
-              api.selectCity(event.detail?.cityId);
-            });
-            window.addEventListener('aerosphere:propose-route', (event) => {
-              api.proposeRoute(event.detail?.sourceId, event.detail?.targetId);
-            });
-          }
-
-          function frameLoop(now) {
-          '''
-              if marker not in source:
-                  raise SystemExit('game.js marker not found')
-              source = source.replace(marker, api, 1)
-              game.write_text(source)
-
-          bridge = root / 'src/command-bridge.js'
-          source = bridge.read_text()
-          source = source.replace(
-              "function selectCity(cityId) {\n  if (!worldMap || !cityById.has(cityId)) return false;\n",
-              "function selectCity(cityId) {\n  if (!cityById.has(cityId)) return false;\n  if (window.AeroSphereGame?.selectCity(cityId)) {\n    window.__AEROSPHERE_QA__ && (window.__AEROSPHERE_QA__.lastCommand = `select:${cityId}`);\n    return true;\n  }\n  if (!worldMap) return false;\n",
-              1
-          )
-          source = source.replace(
-              "async function proposeRoute(sourceId, targetId) {\n  if (!cityById.has(sourceId) || !cityById.has(targetId) || sourceId === targetId) return false;\n  selectCity(sourceId);\n",
-              "async function proposeRoute(sourceId, targetId) {\n  if (!cityById.has(sourceId) || !cityById.has(targetId) || sourceId === targetId) return false;\n  if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) {\n    window.__AEROSPHERE_QA__ && (window.__AEROSPHERE_QA__.lastCommand = `route:${sourceId}:${targetId}`);\n    return true;\n  }\n  selectCity(sourceId);\n",
-              1
-          )
-          bridge.write_text(source)
-
-          gestures = root / 'src/gesture-controls.js'
-          source = gestures.read_text()
-          if 'window.AeroSphereGame?.proposeRoute(sourceId, targetId)' not in source:
-              source = source.replace(
-                  "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n",
-                  "  async function beginRouteWorkflow(sourceId, targetId) {\n    showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);\n    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;\n",
-                  1
-              )
-          source = source.replace(
-              "    const cityNode = event.target.closest?.('[data-city-id]');\n    const sourceCityId = event.button === 0 && cityNode?.classList.contains('open') ? cityNode.dataset.cityId : null;\n",
-              "    const cityNode = event.target.closest?.('[data-city-id]');\n    const nearbyCity = findNearestCityOnScreen(event.clientX, event.clientY, ROUTE_DROP_RADIUS_PX);\n    const sourceCityId = event.button === 0\n      ? (cityNode?.classList.contains('open') ? cityNode.dataset.cityId : (nearbyCity && isOpenCity(nearbyCity.id) ? nearbyCity.id : null))\n      : null;\n",
-              1
-          )
-          source = source.replace(
-              "  function suppressPostDragClick(event) {\n    if (event.__aeroGestureSynthetic) return;\n    if (performance.now() >= suppressClickUntil) return;\n    event.preventDefault();\n    event.stopImmediatePropagation();\n  }\n",
-              "  function suppressPostDragClick(event) {\n    if (event.__aeroGestureSynthetic) return;\n    if (performance.now() >= suppressClickUntil) return;\n    if (!isEventInsideMap(event)) return;\n    event.preventDefault();\n    event.stopImmediatePropagation();\n  }\n",
-              1
-          )
-          gestures.write_text(source)
-          PY
-
-          node --check world-air-network/src/game.js
-          node --check world-air-network/src/command-bridge.js
-          node --check world-air-network/src/gesture-controls.js
-
-          if ! git diff --quiet; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add world-air-network/src/game.js world-air-network/src/command-bridge.js world-air-network/src/gesture-controls.js
-            git commit -m 'Стабилизировать прямое управление жестами'
-            git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
-          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -169,6 +54,12 @@ jobs:
           QA_OUTPUT_DIR: artifacts/aerosphere-qa
         run: node world-air-network/tests/gesture-diagnostic.mjs
 
+      - name: Diagnose touch drag events
+        env:
+          AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
+          QA_OUTPUT_DIR: artifacts/aerosphere-qa
+        run: node world-air-network/tests/touch-diagnostic.mjs
+
       - name: Play complete browser scenario
         env:
           AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
@@ -187,5 +78,6 @@ jobs:
             world-air-network/src/command-bridge.js
             world-air-network/tests/browser-check.mjs
             world-air-network/tests/gesture-diagnostic.mjs
+            world-air-network/tests/touch-diagnostic.mjs
             ${{ runner.temp }}/aerosphere-server.log
           retention-days: 14
