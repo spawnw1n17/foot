@@ -1,3 +1,4 @@
+import './command-bridge.js';
 import { CITY_CATALOG } from './data.js';
 import { projectCity } from './engine.js';
 import { dispatchGestureClick, installOriginalStyleMapControls } from './gesture-controls.js';
@@ -204,6 +205,7 @@ function prioritizeCityAtMapPoint(event) {
 }
 
 function activateCity(cityId) {
+  if (window.AeroSphereCommands?.selectCity(cityId)) return;
   const clickCurrentNode = () => {
     const node = worldMap.querySelector(`[data-city-id="${CSS.escape(cityId)}"]`);
     if (!node) return false;
