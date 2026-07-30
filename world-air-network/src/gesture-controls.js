@@ -37,7 +37,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
   document.addEventListener('click', handleZoomControl, true);
 
   new MutationObserver(() => syncMapView()).observe(worldMap, { attributes: true, attributeFilter: ['viewBox'] });
-  setTimeout(() => showGestureHint('Перетаскивайте карту мышью. Колесо меняет масштаб. Протяните линию между открытыми аэропортами, чтобы создать маршрут.'), 0);
+  setTimeout(() => showGestureHint('Перетаскивайте карту мышью или пальцем. Колесо меняет масштаб. Протяните линию между открытыми аэропортами, чтобы создать маршрут.'), 0);
 
   function installGestureStyles() {
     const style = document.createElement('style');
@@ -50,6 +50,8 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
       .world-map.is-route-dragging { cursor: crosshair; }
       .city-node.open { touch-action: none; }
       .gesture-layer { pointer-events: none; }
+      .tutorial-card { pointer-events: none; }
+      .tutorial-card .close-mini { pointer-events: auto; }
       .route-drag-preview {
         fill: none;
         stroke: var(--accent);
@@ -313,9 +315,6 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
 
   async function beginRouteWorkflow(sourceId, targetId) {
     showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);
-    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
-    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
-    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     const sourceNode = await waitForElement(`[data-city-id="${CSS.escape(sourceId)}"]`);
     if (!sourceNode) return showGestureHint('Не удалось выбрать исходный аэропорт.');
