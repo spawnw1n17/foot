@@ -28,14 +28,26 @@ jobs:
       - name: Apply smooth rendering patch once
         run: |
           python3 world-air-network/tests/apply-smooth-rendering.py
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('world-air-network/src/route-guard.js')
+          source = path.read_text()
+          old = "new MutationObserver(queueRefresh).observe(cityLayer, { childList: true });"
+          new = "new MutationObserver(queueRefresh).observe(cityLayer, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'stroke-dasharray'] });"
+          if old in source:
+              path.write_text(source.replace(old, new, 1))
+          elif new not in source:
+              raise SystemExit('route guard observer marker not found')
+          PY
           node --check world-air-network/src/game.js
           node --check world-air-network/src/gesture-controls.js
           node --check world-air-network/src/polish.js
+          node --check world-air-network/src/route-guard.js
           node --check world-air-network/sw.js
           if ! git diff --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add world-air-network/src/game.js world-air-network/src/gesture-controls.js world-air-network/src/polish.js world-air-network/sw.js
+            git add world-air-network/src/game.js world-air-network/src/gesture-controls.js world-air-network/src/polish.js world-air-network/src/route-guard.js world-air-network/sw.js
             git commit -m 'Сделать движение карты и самолётов плавным'
             git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
           fi
@@ -88,6 +100,7 @@ jobs:
             world-air-network/src/game.js
             world-air-network/src/gesture-controls.js
             world-air-network/src/command-bridge.js
+            world-air-network/src/route-guard.js
             world-air-network/tests/browser-check.mjs
             world-air-network/tests/smoothness-check.mjs
             ${{ runner.temp }}/aerosphere-server.log
