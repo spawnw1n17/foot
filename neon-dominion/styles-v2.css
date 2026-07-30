@@ -3,7 +3,17 @@
     radial-gradient(circle at 50% 42%,rgba(48,91,177,.18),transparent 44%),
     linear-gradient(180deg,#070b16,#03050b);
 }
-.battlefield-wrap:before{display:none}
+.battlefield-wrap:before{
+  display:block;
+  inset:0;
+  z-index:1;
+  background-image:url('./assets/arena-background.svg');
+  background-position:center;
+  background-size:cover;
+  opacity:.13;
+  mix-blend-mode:screen;
+  pointer-events:none;
+}
 .battlefield-wrap canvas{cursor:crosshair;image-rendering:auto}
 .group-controls{
   position:absolute;
@@ -73,7 +83,8 @@
   pointer-events:none;
 }
 .drag-label{z-index:7;box-shadow:0 10px 28px rgba(0,0,0,.38)}
-.map-vignette{box-shadow:inset 0 0 110px rgba(0,0,0,.7),inset 0 0 22px rgba(84,245,255,.025)}
+.map-vignette{z-index:2;box-shadow:inset 0 0 110px rgba(0,0,0,.7),inset 0 0 22px rgba(84,245,255,.025)}
+.notification-stack,.speed-control,.mobile-panel-toggle{z-index:6}
 
 @media(max-width:900px){
   .group-controls{
