@@ -192,6 +192,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
   function suppressPostDragClick(event) {
     if (event.__aeroGestureSynthetic) return;
     if (performance.now() >= suppressClickUntil) return;
+    if (!isEventInsideMap(event)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
   }
@@ -312,6 +313,7 @@ export function installOriginalStyleMapControls({ worldMap, cityPoints, cityName
 
   async function beginRouteWorkflow(sourceId, targetId) {
     showGestureHint(`${cityNames.get(sourceId)} → ${cityNames.get(targetId)}: подтвердите строительство маршрута.`);
+    if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     if (window.AeroSphereGame?.proposeRoute(sourceId, targetId)) return;
     const sourceNode = await waitForElement(`[data-city-id="${CSS.escape(sourceId)}"]`);
