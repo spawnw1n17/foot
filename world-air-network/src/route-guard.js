@@ -97,13 +97,25 @@ function installTutorialCompletion() {
     try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch {}
   };
 
+  const completeOnMapPointer = (event) => {
+    if (!event.composedPath?.().includes(worldMap)) return;
+    complete();
+    window.removeEventListener('pointerdown', completeOnMapPointer, true);
+  };
+
+  const completeOnMapWheel = (event) => {
+    if (!event.composedPath?.().includes(worldMap)) return;
+    complete();
+    window.removeEventListener('wheel', completeOnMapWheel, true);
+  };
+
   try {
     if (localStorage.getItem(TUTORIAL_KEY) === '1') card.classList.add('hidden');
   } catch {}
 
   close?.addEventListener('click', complete, { once: true });
-  worldMap?.addEventListener('pointerdown', complete, { once: true, capture: true });
-  worldMap?.addEventListener('wheel', complete, { once: true, passive: true });
+  window.addEventListener('pointerdown', completeOnMapPointer, true);
+  window.addEventListener('wheel', completeOnMapWheel, { capture: true, passive: true });
 
   if (routeLayer) {
     const observer = new MutationObserver(() => {
