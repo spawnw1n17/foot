@@ -1,5 +1,125 @@
-import{chromium}from'playwright';import assert from'node:assert/strict';import{mkdir,writeFile}from'node:fs/promises';
-const url=process.env.NEON_DOMINION_URL||'http://127.0.0.1:8080/neon-dominion/';const out=process.env.QA_OUTPUT_DIR||'artifacts/neon-dominion';await mkdir(out,{recursive:true});const browser=await chromium.launch({headless:true});const report={desktop:{},mobile:{}};
-async function desktop(){const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];await page.addInitScript(()=>{window.__qaLongTasks=[];try{new PerformanceObserver(list=>window.__qaLongTasks.push(...list.getEntries().map(e=>e.duration))).observe({entryTypes:['longtask']})}catch{}});page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));await page.goto(url,{waitUntil:'networkidle'});await page.locator('#campaignBtn').click();await page.waitForFunction(()=>window.NeonDominionQA?.getState()?.nodes?.length>0);const box=await page.locator('#battlefield').boundingBox();assert.ok(box);const scale=Math.min(box.width/1200,box.height/720),ox=box.x+(box.width-1200*scale)/2,oy=box.y+(box.height-720*scale)/2;const pt=(x,y)=>({x:ox+x*scale,y:oy+y*scale});const a=pt(180,360),b=pt(330,235);await page.mouse.move(a.x,a.y);await page.mouse.down();await page.mouse.move(b.x,b.y,{steps:18});await page.mouse.up();await page.waitForFunction(()=>window.NeonDominionQA.getState().convoys.length>0||window.NeonDominionQA.getState().nodes.find(n=>n.id==='p1').owner==='player');await page.evaluate(()=>window.NeonDominionQA.setSpeed(2));await page.waitForTimeout(1700);const state=await page.evaluate(()=>window.NeonDominionQA.getState());assert.ok(state.nodes.length>=7);assert.ok(state.stats.sent>0);assert.equal(errors.length,0);const perf=await page.evaluate(()=>new Promise(resolve=>{const d=[];let prev=performance.now();function f(t){d.push(t-prev);prev=t;if(d.length<90)requestAnimationFrame(f);else resolve({frames:d,longTasks:window.__qaLongTasks||[]})}requestAnimationFrame(f)}));perf.frames.sort((x,y)=>x-y);const p50=perf.frames[Math.floor(perf.frames.length*.5)],p95=perf.frames[Math.floor(perf.frames.length*.95)],blocking=perf.longTasks.reduce((a,b)=>a+b,0),severe=perf.longTasks.filter(v=>v>150).length;report.desktop={nodes:state.nodes.length,sent:state.stats.sent,p50,p95,max:perf.frames.at(-1),longTasks:perf.longTasks,blocking,severe,errors};assert.ok(severe<=1,`Тяжёлых блокировок: ${severe}`);assert.ok(blocking<1200,`Суммарная блокировка: ${blocking} мс`);await page.screenshot({path:`${out}/desktop.png`,fullPage:true});await page.locator('#menuBtn').click();assert.ok(await page.locator('#pauseOverlay.visible').count());await page.locator('#resumeBtn').click();await page.screenshot({path:`${out}/desktop-active.png`,fullPage:true});await page.close()}
-async function mobile(){const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});const page=await context.newPage(),errors=[];page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));await page.goto(url,{waitUntil:'networkidle'});await page.evaluate(()=>window.NeonDominionQA.startLevel('crossfire'));await page.waitForFunction(()=>window.NeonDominionQA.getState()?.nodes?.length>=10);const dims=await page.evaluate(()=>{const r=document.querySelector('#battlefield').getBoundingClientRect();return{scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth,canvas:{width:r.width,height:r.height}}});assert.ok(dims.scroll<=dims.client+1);assert.ok(dims.canvas.height>650);assert.equal(errors.length,0);report.mobile={width:`${dims.scroll}/${dims.client}`,canvas:dims.canvas,errors};await page.screenshot({path:`${out}/mobile.png`,fullPage:true});await context.close()}
-await desktop();await mobile();await writeFile(`${out}/report.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report));await browser.close();
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+
+const url = process.env.NEON_DOMINION_URL || 'http://127.0.0.1:8080/neon-dominion/';
+const output = process.env.QA_OUTPUT_DIR || 'artifacts/neon-dominion';
+await mkdir(output, { recursive: true });
+const browser = await chromium.launch({ headless: true });
+const report = { desktop: {}, mobile: {} };
+
+function mapPoint(box, x, y) {
+  const portrait = box.width < 620 && box.height > box.width * 1.15;
+  if (portrait) return { x: box.x + x * box.width / 1200, y: box.y + y * box.height / 720 };
+  const scale = Math.min(box.width / 1200, box.height / 720);
+  return {
+    x: box.x + (box.width - 1200 * scale) / 2 + x * scale,
+    y: box.y + (box.height - 720 * scale) / 2 + y * scale,
+  };
+}
+
+async function desktopScenario() {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const errors = [];
+  await page.addInitScript(() => {
+    window.__qaLongTasks = [];
+    try {
+      new PerformanceObserver((list) => window.__qaLongTasks.push(...list.getEntries().map((entry) => entry.duration))).observe({ entryTypes: ['longtask'] });
+    } catch {}
+  });
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
+
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.locator('#campaignBtn').click();
+  await page.waitForFunction(() => window.NeonDominionQA?.getState()?.nodes?.length > 0);
+  await page.waitForFunction(() => window.NeonDominionQA.assetsReady());
+
+  const box = await page.locator('#battlefield').boundingBox();
+  assert.ok(box);
+  const source = mapPoint(box, 180, 360);
+  const remoteEnemy = mapPoint(box, 1010, 360);
+  await page.mouse.move(source.x, source.y);
+  await page.mouse.down();
+  await page.mouse.move(remoteEnemy.x, remoteEnemy.y, { steps: 24 });
+  await page.mouse.up();
+  await page.waitForFunction(() => window.NeonDominionQA.getState().convoys.some((convoy) => convoy.from === 'p0' && convoy.to === 'r0'));
+
+  const state = await page.evaluate(() => window.NeonDominionQA.getState());
+  assert.ok(state.stats.sent > 0);
+  assert.ok(state.convoys.some((convoy) => Number.isFinite(convoy.curve)));
+  assert.equal(errors.length, 0);
+
+  const performanceData = await page.evaluate(() => ({ longTasks: window.__qaLongTasks || [] }));
+  const severe = performanceData.longTasks.filter((duration) => duration > 150).length;
+  assert.ok(severe <= 1, `Тяжёлых блокировок: ${severe}`);
+
+  report.desktop = {
+    nodes: state.nodes.length,
+    freeRoute: state.convoys.some((convoy) => convoy.from === 'p0' && convoy.to === 'r0'),
+    assetsReady: await page.evaluate(() => window.NeonDominionQA.assetsReady()),
+    longTasks: performanceData.longTasks,
+    errors,
+  };
+  await page.screenshot({ path: `${output}/desktop-free-movement.png`, fullPage: true });
+  await page.close();
+}
+
+async function mobileScenario() {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
+  page.on('pageerror', (error) => errors.push(error.message));
+
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.evaluate(() => window.NeonDominionQA.startLevel('crossfire'));
+  await page.waitForFunction(() => window.NeonDominionQA.getState()?.nodes?.length >= 10);
+  await page.waitForFunction(() => window.NeonDominionQA.assetsReady());
+
+  const box = await page.locator('#battlefield').boundingBox();
+  assert.ok(box);
+  const p1 = mapPoint(box, 320, 170);
+  const r0 = mapPoint(box, 1020, 190);
+
+  const initialSelection = await page.evaluate(() => window.NeonDominionQA.getSelection());
+  assert.deepEqual(initialSelection, ['p0']);
+  await page.locator('#groupSelectBtn').click();
+  await page.touchscreen.tap(p1.x, p1.y);
+  await page.waitForFunction(() => window.NeonDominionQA.getSelection().length === 2);
+  await page.locator('#groupSendBtn').click();
+  await page.touchscreen.tap(r0.x, r0.y);
+  await page.waitForFunction(() => window.NeonDominionQA.getState().convoys.filter((convoy) => convoy.to === 'r0').length >= 2);
+
+  const state = await page.evaluate(() => window.NeonDominionQA.getState());
+  const dimensions = await page.evaluate(() => {
+    const rect = document.querySelector('#battlefield').getBoundingClientRect();
+    return {
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+      canvas: { width: rect.width, height: rect.height },
+    };
+  });
+  assert.ok(dimensions.scroll <= dimensions.client + 1);
+  assert.ok(dimensions.canvas.height > 650);
+  assert.equal(state.stats.groupOrders, 1);
+  assert.equal(errors.length, 0);
+
+  report.mobile = {
+    width: `${dimensions.scroll}/${dimensions.client}`,
+    canvas: dimensions.canvas,
+    initialSelection,
+    selection: await page.evaluate(() => window.NeonDominionQA.getSelection()),
+    groupConvoys: state.convoys.filter((convoy) => convoy.to === 'r0').length,
+    groupOrders: state.stats.groupOrders,
+    errors,
+  };
+  await page.screenshot({ path: `${output}/mobile-group-selection.png`, fullPage: true });
+  await context.close();
+}
+
+await desktopScenario();
+await mobileScenario();
+await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2));
+console.log(JSON.stringify(report));
+await browser.close();

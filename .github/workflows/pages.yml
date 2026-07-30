@@ -25,9 +25,18 @@ jobs:
           node-version: 22
       - name: Validate main project
         run: npm run check
-      - name: Validate NEON DOMINION
+      - name: Validate NEON DOMINION Free Front
         working-directory: neon-dominion
-        run: npm run check
+        run: |
+          set -e
+          npm run check
+          test -s styles-v2.css
+          for asset in assets/arena-background.svg assets/base-core.svg assets/base-factory.svg assets/base-fortress.svg assets/base-relay.svg assets/base-reactor.svg; do
+            test -s "$asset"
+          done
+          grep -q "groupSelectBtn" index.html
+          grep -q "sendMany" src/engine.js
+          grep -q "assetsReady" src/game.js
       - name: Validate UAV simulator
         run: |
           set -e
@@ -62,7 +71,7 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Verify published endpoints and assets
+      - name: Verify published endpoints and Free Front assets
         run: |
           set -e
           ROOT="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
@@ -70,11 +79,13 @@ jobs:
           NEON="$ROOT/neon-dominion"
           curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors "$UAV/" | grep -q "Аврора Полёт"
           curl --fail --location --retry 18 --retry-delay 5 --retry-all-errors "$NEON/" | grep -q "NEON DOMINION"
-          for asset in styles.css src/maps.js src/engine.js src/game.js sw.js manifest.webmanifest assets/icon.svg; do
+          for asset in styles.css styles-v2.css src/maps.js src/engine.js src/game.js sw.js manifest.webmanifest assets/icon.svg assets/arena-background.svg assets/base-core.svg assets/base-factory.svg assets/base-fortress.svg assets/base-relay.svg assets/base-reactor.svg; do
             curl --fail --location --retry 8 --retry-delay 3 --retry-all-errors "$NEON/$asset" >/dev/null
           done
           curl --fail --location "$NEON/src/game.js" | grep -q "NeonDominionQA"
-          echo "Verified: $NEON/"
+          curl --fail --location "$NEON/src/engine.js" | grep -q "sendMany"
+          curl --fail --location "$NEON/" | grep -q "groupSelectBtn"
+          echo "Verified Free Front: $NEON/"
       - name: Open published games in Chromium
         run: |
           set -e
@@ -86,6 +97,8 @@ jobs:
           grep -q 'id="battlefield"' "$RUNNER_TEMP/neon-dom.html"
           grep -q 'NEON DOMINION' "$RUNNER_TEMP/neon-dom.html"
           grep -q 'data-ability="shield"' "$RUNNER_TEMP/neon-dom.html"
+          grep -q 'id="groupSelectBtn"' "$RUNNER_TEMP/neon-dom.html"
+          grep -q 'id="groupSendBtn"' "$RUNNER_TEMP/neon-dom.html"
           "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=1440,900 --virtual-time-budget=9000 --screenshot="$RUNNER_TEMP/neon-desktop.png" "$NEON"
           "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=390,844 --force-device-scale-factor=1 --virtual-time-budget=9000 --screenshot="$RUNNER_TEMP/neon-mobile.png" "$NEON"
           test -s "$RUNNER_TEMP/neon-desktop.png"
@@ -103,4 +116,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create --repo "${{ github.repository }}" --title "[AUTO] NEON DOMINION опубликована ${{ github.sha }}" --body "Игра опубликована и проверена в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"
+          gh issue create --repo "${{ github.repository }}" --title "[AUTO] NEON DOMINION Free Front опубликована ${{ github.sha }}" --body "Игра опубликована и проверена в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"

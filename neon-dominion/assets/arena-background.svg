@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#050816"/><stop offset=".48" stop-color="#091326"/><stop offset="1" stop-color="#02040b"/>
+    </linearGradient>
+    <radialGradient id="core" cx="50%" cy="47%" r="58%"><stop offset="0" stop-color="#183a67" stop-opacity=".52"/><stop offset=".38" stop-color="#0b1d39" stop-opacity=".38"/><stop offset="1" stop-color="#03050c" stop-opacity="0"/></radialGradient>
+    <radialGradient id="violet" cx="88%" cy="14%" r="38%"><stop offset="0" stop-color="#5c2da5" stop-opacity=".22"/><stop offset="1" stop-color="#5c2da5" stop-opacity="0"/></radialGradient>
+    <pattern id="hex" width="52" height="45" patternUnits="userSpaceOnUse"><path d="M13 1h26l13 21.5L39 44H13L0 22.5Z" fill="none" stroke="#7ddfff" stroke-opacity=".055" stroke-width="1"/></pattern>
+    <pattern id="micro" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M0 16V0h16" fill="none" stroke="#b9eaff" stroke-opacity=".025" stroke-width="1"/></pattern>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <linearGradient id="lane" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#54f5ff" stop-opacity="0"/><stop offset=".5" stop-color="#54f5ff" stop-opacity=".28"/><stop offset="1" stop-color="#7b68ff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/><rect width="1200" height="720" fill="url(#core)"/><rect width="1200" height="720" fill="url(#violet)"/><rect width="1200" height="720" fill="url(#hex)"/><rect width="1200" height="720" fill="url(#micro)"/>
+  <g opacity=".34" fill="none" stroke="url(#lane)" stroke-width="1.2"><path d="M-80 140C180 20 310 220 555 120S930 65 1280 210"/><path d="M-100 590C170 430 350 650 600 510S1000 470 1320 610"/><path d="M40 760C210 530 270 290 520 260S910 420 1180-60"/></g>
+  <g fill="none" stroke="#54f5ff" stroke-opacity=".12" filter="url(#glow)"><circle cx="600" cy="360" r="198" stroke-dasharray="3 15"/><circle cx="600" cy="360" r="286" stroke-dasharray="1 22"/><path d="M600 64v54M600 602v54M304 360h54M842 360h54"/></g>
+  <g fill="#d9fbff" opacity=".45"><circle cx="70" cy="84" r="1"/><circle cx="1040" cy="94" r="1.3"/><circle cx="1120" cy="510" r=".9"/><circle cx="182" cy="620" r="1.2"/><circle cx="866" cy="655" r="1"/><circle cx="420" cy="86" r=".8"/></g>
+  <g opacity=".18" stroke="#8eefff" fill="none"><path d="M48 48h130M48 48v76M1152 48h-130M1152 48v76M48 672h130M48 672v-76M1152 672h-130M1152 672v-76"/></g>
+  <rect x="1" y="1" width="1198" height="718" fill="none" stroke="#91eaff" stroke-opacity=".06"/>
+</svg>
