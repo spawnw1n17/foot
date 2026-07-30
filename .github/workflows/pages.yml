@@ -25,12 +25,12 @@ jobs:
           node-version: 22
       - name: Validate main project
         run: npm run check
-      - name: Validate NEON DOMINION WAR ROOM
+      - name: Validate NEON DOMINION full browser audit release
         working-directory: neon-dominion
         run: |
           set -e
           npm run check
-          for file in styles-v2.css styles-v4.css styles-v5.css styles-v6.css styles-v6-home.css styles-v7.css src/territory.js src/meta.js src/home-profile.js src/war-room-core.js src/war-room.js WAR-ROOM.md; do
+          for file in styles-v2.css styles-v4.css styles-v5.css styles-v6.css styles-v6-home.css styles-v7.css src/territory.js src/meta.js src/home-profile.js src/war-room-core.js src/war-room.js tests/full-audit.mjs WAR-ROOM.md; do
             test -s "$file"
           done
           for asset in assets/arena-background.svg assets/base-core.svg assets/base-factory.svg assets/base-fortress.svg assets/base-relay.svg assets/base-reactor.svg; do
@@ -43,7 +43,9 @@ jobs:
           grep -q "WORLD_REGIONS" src/war-room-core.js
           grep -q "buildNode" src/engine.js
           grep -q "startWarLevel" src/game.js
-          grep -q "neon-dominion-v7" sw.js
+          grep -q "neon-dominion-v8" sw.js
+          grep -q "mobileOverlap" tests/full-audit.mjs
+          grep -q "landscapeOverlap" tests/full-audit.mjs
       - name: Validate UAV simulator
         run: |
           set -e
@@ -78,7 +80,7 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Verify published WAR ROOM assets
+      - name: Verify published audited WAR ROOM assets
         run: |
           set -e
           ROOT="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
@@ -91,12 +93,12 @@ jobs:
           done
           curl --fail --location "$NEON/src/game.js" | grep -q "startWarLevel"
           curl --fail --location "$NEON/src/engine.js" | grep -q "buildNode"
-          curl --fail --location "$NEON/src/war-room.js" | grep -q "WarRoomController"
+          curl --fail --location "$NEON/src/war-room.js" | grep -q "compactHud"
           curl --fail --location "$NEON/src/war-room-core.js" | grep -q "WORLD_REGIONS"
-          curl --fail --location "$NEON/sw.js" | grep -q "neon-dominion-v7"
-          curl --fail --location "$NEON/" | grep -q "styles-v7.css"
-          echo "Verified WAR ROOM: $NEON/"
-      - name: Open published WAR ROOM in Chromium
+          curl --fail --location "$NEON/sw.js" | grep -q "neon-dominion-v8"
+          curl --fail --location "$NEON/styles-v7.css" | grep -q "Safe compact HUD placement"
+          echo "Verified audited WAR ROOM: $NEON/"
+      - name: Open published audited WAR ROOM in Chromium
         run: |
           set -e
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
@@ -113,19 +115,22 @@ jobs:
           grep -q 'id="warBattlePanel"' "$RUNNER_TEMP/neon-dom.html"
           "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=1440,900 --virtual-time-budget=11000 --screenshot="$RUNNER_TEMP/neon-desktop.png" "$NEON"
           "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=390,844 --force-device-scale-factor=1 --virtual-time-budget=11000 --screenshot="$RUNNER_TEMP/neon-mobile.png" "$NEON"
+          "$CHROME" --headless=new --no-sandbox --disable-dev-shm-usage --hide-scrollbars --window-size=844,390 --force-device-scale-factor=1 --virtual-time-budget=11000 --screenshot="$RUNNER_TEMP/neon-landscape.png" "$NEON"
           test -s "$RUNNER_TEMP/neon-desktop.png"
           test -s "$RUNNER_TEMP/neon-mobile.png"
+          test -s "$RUNNER_TEMP/neon-landscape.png"
       - name: Upload publication screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: browser-games-war-room-${{ github.sha }}
+          name: browser-games-full-audit-${{ github.sha }}
           path: |
             ${{ runner.temp }}/neon-desktop.png
             ${{ runner.temp }}/neon-mobile.png
+            ${{ runner.temp }}/neon-landscape.png
             ${{ runner.temp }}/neon-dom.html
           retention-days: 14
-      - name: Record successful WAR ROOM publication
+      - name: Record successful audited publication
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create --repo "${{ github.repository }}" --title "[AUTO] NEON DOMINION WAR ROOM опубликована ${{ github.sha }}" --body "WAR ROOM, глобальная карта, редактор, новые режимы и расширенный профиль опубликованы и проверены в Chromium: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"
+          gh issue create --repo "${{ github.repository }}" --title "[AUTO] NEON DOMINION полный аудит опубликован ${{ github.sha }}" --body "Полный Chromium-аудит, исправления редактора, мобильного HUD и landscape-интерфейса опубликованы и проверены: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/neon-dominion/"

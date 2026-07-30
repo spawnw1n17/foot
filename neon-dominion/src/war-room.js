@@ -180,10 +180,14 @@ export class WarRoomController {
   open(tab = 'world') {
     this.activeTab = tab;
     this.overlay.classList.add('visible');
+    document.body.classList.add('war-room-open');
     this.render();
   }
 
-  close() { this.overlay.classList.remove('visible'); }
+  close() {
+    this.overlay.classList.remove('visible');
+    document.body.classList.remove('war-room-open');
+  }
 
   refresh() {
     this.state = normalizeWarRoomState(this.state);
@@ -377,7 +381,7 @@ export class WarRoomController {
     if (action === 'start-mode') this.startStandaloneMode(target.dataset.mode);
     if (action === 'editor-clear') { this.editor.nodes = []; this.editor.links = []; this.editor.selected = null; this.render(); }
     if (action === 'editor-select') { this.editor.selected = target.dataset.node; this.render(); }
-    if (action === 'editor-delete') { this.editor.nodes = this.editor.nodes.filter((node) => node.id !== target.dataset.node); this.editor.selected = null; this.render(); }
+    if (action === 'editor-delete') { const id = target.dataset.node; this.editor.nodes = this.editor.nodes.filter((node) => node.id !== id); this.editor.links = this.editor.links.filter((link) => !link.includes(id)); this.editor.selected = null; this.render(); }
     if (action === 'editor-export') this.exportEditor();
     if (action === 'editor-import') this.importEditor();
     if (action === 'editor-start') this.startEditorMap();
@@ -427,8 +431,10 @@ export class WarRoomController {
     const rect = canvas.getBoundingClientRect();
     const x = clamp((event.clientX - rect.left) / rect.width * 1200, 40, 1160);
     const y = clamp((event.clientY - rect.top) / rect.height * 720, 40, 680);
-    const index = this.editor.nodes.length;
     const prefix = this.editor.owner === 'player' ? 'p' : this.editor.owner === 'red' ? 'r' : this.editor.owner === 'violet' ? 'v' : 'n';
+    const occupied = new Set(this.editor.nodes.map((node) => node.id));
+    let index = 0;
+    while (occupied.has(`${prefix}${index}`)) index += 1;
     const id = `${prefix}${index}`;
     this.editor.nodes.push({ id, x: Math.round(x), y: Math.round(y), type: this.editor.type, owner: this.editor.owner, troops: this.editor.type === 'core' ? 58 : 24, level: 1 });
     this.editor.selected = id;
@@ -558,6 +564,8 @@ export class WarRoomController {
     if (this.battle.boss) this.setupBoss(engine, this.battle.boss);
     if (mode === 'escort') this.setupEscort(engine);
     this.hud.hidden = false;
+    const compactHud = matchMedia('(max-width: 900px)').matches || (innerHeight <= 520 && innerWidth > innerHeight);
+    this.hud.classList.toggle('collapsed', compactHud);
     this.renderBattleHud(true);
     this.ensureAudio();
     this.speak(`${MISSION_MODES[mode]?.name || 'Операция'} началась`);

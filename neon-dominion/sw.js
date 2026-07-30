@@ -1,4 +1,4 @@
-const CACHE = 'neon-dominion-v7';
+const CACHE = 'neon-dominion-v8';
 const FILES = [
   './', './index.html', './styles.css', './styles-v2.css', './styles-v4.css', './styles-v5.css', './styles-v6.css', './styles-v6-home.css', './styles-v7.css', './manifest.webmanifest',
   './assets/icon.svg', './assets/arena-background.svg', './assets/base-core.svg', './assets/base-factory.svg',

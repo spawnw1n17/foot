@@ -18,7 +18,7 @@ permissions:
 jobs:
   browser-qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,7 +40,7 @@ jobs:
           done
           cat "$RUNNER_TEMP/neon-server.log"
           exit 1
-      - name: Run desktop, mobile, Arsenal and WAR ROOM scenarios
+      - name: Run complete browser audit
         env:
           NEON_DOMINION_URL: http://127.0.0.1:8080/neon-dominion/
           QA_OUTPUT_DIR: artifacts/neon-dominion
@@ -48,11 +48,12 @@ jobs:
           node neon-dominion/tests/browser-check.mjs
           node neon-dominion/tests/home-profile-check.mjs
           node neon-dominion/tests/war-room-browser.mjs
+          node neon-dominion/tests/full-audit.mjs
       - name: Upload screenshots and reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: neon-dominion-war-room-qa-${{ github.sha }}
+          name: neon-dominion-full-audit-${{ github.sha }}
           path: |
             artifacts/neon-dominion
             neon-dominion/src
