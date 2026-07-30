@@ -54,6 +54,7 @@ async function runDesktopScenario() {
     routeCount: document.querySelectorAll('#routeLayer [data-route-id]').length,
     searchReady: Boolean(document.querySelector('#citySearch')),
     gestureLayerReady: Boolean(document.querySelector('.gesture-layer')),
+    commandApiReady: Boolean(window.AeroSphereGame),
     qaReady: Boolean(window.__AEROSPHERE_QA__),
     runtimeErrors: document.documentElement.dataset.runtimeErrors || null
   }));
@@ -61,6 +62,7 @@ async function runDesktopScenario() {
   assert.equal(startup.routeCount, 2, 'Новая игра должна начинаться с двух маршрутов');
   assert.equal(startup.searchReady, true, 'Поиск города должен быть подключён');
   assert.equal(startup.gestureLayerReady, true, 'Слой перетаскивания должен быть подключён');
+  assert.equal(startup.commandApiReady, true, 'Прямой API игрового движка должен быть подключён');
   assert.equal(startup.qaReady, true, 'QA-телеметрия должна быть подключена');
   assert.equal(startup.runtimeErrors, null, 'Не должно быть ошибок рантайма');
 
@@ -175,7 +177,7 @@ async function runMobileScenario() {
   const mobileBeforePan = await mobileMap.getAttribute('viewBox');
   const zoomedTouchAction = await mobileMap.evaluate((node) => getComputedStyle(node).touchAction);
   assert.equal(zoomedTouchAction, 'none', 'После увеличения карта должна перехватывать жест перетаскивания');
-  await dragMap(page, 0.55, 0.62, -72, 35);
+  await dragMapTouch(context, page, 0.55, 0.62, -72, 35);
   await page.waitForTimeout(280);
   const mobileAfterPan = await mobileMap.getAttribute('viewBox');
   assert.notEqual(mobileAfterPan, mobileBeforePan, 'Перетаскивание должно работать и в мобильной раскладке');
@@ -214,6 +216,33 @@ async function dragCityToCity(page, sourceId, targetId) {
   await page.mouse.move((source.x + target.x) / 2, (source.y + target.y) / 2, { steps: 8 });
   await page.mouse.move(target.x, target.y, { steps: 8 });
   await page.mouse.up();
+}
+
+async function dragMapTouch(context, page, xRatio, yRatio, deltaX, deltaY) {
+  const box = await page.locator('#worldMap').boundingBox();
+  assert.ok(box, 'Карта должна иметь экранные координаты для сенсорного перетаскивания');
+  const startX = box.x + box.width * xRatio;
+  const startY = box.y + box.height * yRatio;
+  const session = await context.newCDPSession(page);
+  await session.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: startX, y: startY, radiusX: 5, radiusY: 5, force: 1, id: 1 }]
+  });
+  for (let step = 1; step <= 12; step += 1) {
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{
+        x: startX + deltaX * (step / 12),
+        y: startY + deltaY * (step / 12),
+        radiusX: 5,
+        radiusY: 5,
+        force: 1,
+        id: 1
+      }]
+    });
+  }
+  await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await session.detach();
 }
 
 async function dragMap(page, xRatio, yRatio, deltaX, deltaY) {
