@@ -198,7 +198,7 @@ function installRiskAdvisor() {
     document.querySelector('.side-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
-  new MutationObserver(queueRefresh).observe(cityLayer, { childList: true });
+  new MutationObserver(queueRefresh).observe(cityLayer, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'stroke-dasharray'] });
   queueRefresh();
 }
 

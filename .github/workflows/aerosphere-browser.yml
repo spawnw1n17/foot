@@ -30,6 +30,14 @@ jobs:
         working-directory: world-air-network
         run: npm run check
 
+      - name: Check browser modules
+        run: |
+          node --check world-air-network/src/game.js
+          node --check world-air-network/src/gesture-controls.js
+          node --check world-air-network/src/polish.js
+          node --check world-air-network/src/route-guard.js
+          node --check world-air-network/sw.js
+
       - name: Install Playwright Chromium
         run: |
           npm install --no-save playwright@1.55.0
@@ -54,6 +62,12 @@ jobs:
           QA_OUTPUT_DIR: artifacts/aerosphere-qa
         run: node world-air-network/tests/browser-check.mjs
 
+      - name: Measure desktop and mobile frame smoothness
+        env:
+          AEROSPHERE_URL: http://127.0.0.1:8080/world-air-network/
+          QA_OUTPUT_DIR: artifacts/aerosphere-qa
+        run: node world-air-network/tests/smoothness-check.mjs
+
       - name: Upload QA report, screenshots and checked sources
         if: always()
         uses: actions/upload-artifact@v4
@@ -64,6 +78,8 @@ jobs:
             world-air-network/src/game.js
             world-air-network/src/gesture-controls.js
             world-air-network/src/command-bridge.js
+            world-air-network/src/route-guard.js
             world-air-network/tests/browser-check.mjs
+            world-air-network/tests/smoothness-check.mjs
             ${{ runner.temp }}/aerosphere-server.log
           retention-days: 14
