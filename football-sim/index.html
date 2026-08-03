@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Футбольный Симулятор 11x11 Online</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+    <div id="app">
+        <!-- Главное меню -->
+        <header id="main-menu" class="screen active">
+            <div class="logo">
+                <h1>⚽ Футбол 11x11</h1>
+                <p>Онлайн Симулятор</p>
+            </div>
+            <nav class="menu-buttons">
+                <button onclick="showScreen('team-management')">🏆 Моя Команда</button>
+                <button onclick="showScreen('match-setup')">⚔️ Начать Матч</button>
+                <button onclick="showScreen('tournament')">🌍 Турнир</button>
+                <button onclick="showScreen('shop')">🛒 Магазин</button>
+                <button onclick="showScreen('settings')">⚙️ Настройки</button>
+            </nav>
+            <div class="user-info">
+                <span id="user-level">Уровень: 1</span>
+                <span id="user-coins">💰 1000</span>
+            </div>
+        </header>
+
+        <!-- Управление командой -->
+        <section id="team-management" class="screen">
+            <div class="screen-header">
+                <button onclick="showScreen('main-menu')" class="back-btn">← Назад</button>
+                <h2>🏆 Моя Команда</h2>
+            </div>
+            <div class="team-stats">
+                <div class="stat-card">
+                    <h3>Рейтинг команды</h3>
+                    <p id="team-rating">75</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Сыграно матчей</h3>
+                    <p id="matches-played">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Побед</h3>
+                    <p id="wins-count">0</p>
+                </div>
+            </div>
+            <div class="squad-container">
+                <h3>Состав команды</h3>
+                <div class="formation-selector">
+                    <label>Схема:</label>
+                    <select id="formation" onchange="updateFormation()">
+                        <option value="4-4-2">4-4-2</option>
+                        <option value="4-3-3">4-3-3</option>
+                        <option value="3-5-2">3-5-2</option>
+                        <option value="5-3-2">5-3-2</option>
+                    </select>
+                </div>
+                <div id="pitch-visual" class="pitch-visual">
+                    <!-- Поле с игроками будет генерироваться JS -->
+                </div>
+                <div class="players-list" id="players-list">
+                    <!-- Список игроков -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Настройка матча -->
+        <section id="match-setup" class="screen">
+            <div class="screen-header">
+                <button onclick="showScreen('main-menu')" class="back-btn">← Назад</button>
+                <h2>⚔️ Начало Матча</h2>
+            </div>
+            <div class="match-options">
+                <div class="option-card">
+                    <h3>Быстрый матч</h3>
+                    <p>Случайный соперник</p>
+                    <button onclick="startMatch('quick')">▶️ Играть</button>
+                </div>
+                <div class="option-card">
+                    <h3>Выбор соперника</h3>
+                    <p>Выберите команду</p>
+                    <select id="opponent-select">
+                        <option value="random">Случайный</option>
+                        <option value="team1">ФК «Молния» (80)</option>
+                        <option value="team2">ФК «Шторм» (72)</option>
+                        <option value="team3">ФК «Титан» (85)</option>
+                    </select>
+                    <button onclick="startMatch('selected')">▶️ Играть</button>
+                </div>
+                <div class="option-card">
+                    <h3>Настройки матча</h3>
+                    <label>
+                        Таймер:
+                        <select id="match-duration">
+                            <option value="5">5 минут</option>
+                            <option value="10" selected>10 минут</option>
+                            <option value="15">15 минут</option>
+                        </select>
+                    </label>
+                    <label>
+                        Сложность:
+                        <select id="difficulty">
+                            <option value="easy">Легко</option>
+                            <option value="normal" selected>Нормально</option>
+                            <option value="hard">Сложно</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Экран матча -->
+        <section id="match-screen" class="screen">
+            <div class="match-header">
+                <div class="team-score">
+                    <span id="home-team-name">Дом</span>
+                    <span id="home-score">0</span>
+                </div>
+                <div class="match-timer">
+                    <span id="match-time">00:00</span>
+                    <span id="match-period">1 тайм</span>
+                </div>
+                <div class="team-score">
+                    <span id="away-score">0</span>
+                    <span id="away-team-name">Гость</span>
+                </div>
+            </div>
+            <div class="pitch-container">
+                <canvas id="match-canvas" width="800" height="500"></canvas>
+            </div>
+            <div class="match-controls">
+                <button id="btn-pass" onclick="playerAction('pass')">Пас</button>
+                <button id="btn-shot" onclick="playerAction('shot')">Удар</button>
+                <button id="btn-tackle" onclick="playerAction('tackle')">Отбор</button>
+                <button id="btn-sprint" onclick="playerAction('sprint')">Спринт</button>
+                <button onclick="toggleTactics()">Тактика</button>
+            </div>
+            <div id="match-events" class="match-events">
+                <!-- События матча -->
+            </div>
+            <div id="tactics-panel" class="tactics-panel hidden">
+                <h4>Тактические настройки</h4>
+                <label>
+                    Стиль игры:
+                    <select id="play-style" onchange="updateTactics()">
+                        <option value="balanced">Сбалансированный</option>
+                        <option value="attack">Атакующий</option>
+                        <option value="defense">Оборонительный</option>
+                        <option value="counter">Контратаки</option>
+                    </select>
+                </label>
+                <label>
+                    Темп:
+                    <select id="tempo" onchange="updateTactics()">
+                        <option value="slow">Медленный</option>
+                        <option value="normal">Нормальный</option>
+                        <option value="fast">Быстрый</option>
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <!-- Турнир -->
+        <section id="tournament" class="screen">
+            <div class="screen-header">
+                <button onclick="showScreen('main-menu')" class="back-btn">← Назад</button>
+                <h2>🌍 Турнирная Таблица</h2>
+            </div>
+            <div class="tournament-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Команда</th>
+                            <th>И</th>
+                            <th>В</th>
+                            <th>Н</th>
+                            <th>П</th>
+                            <th>Очки</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tournament-body">
+                        <!-- Заполняется JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Магазин -->
+        <section id="shop" class="screen">
+            <div class="screen-header">
+                <button onclick="showScreen('main-menu')" class="back-btn">← Назад</button>
+                <h2>🛒 Магазин</h2>
+            </div>
+            <div class="shop-items">
+                <div class="item-card">
+                    <h3>Новый игрок</h3>
+                    <p>Случайный футболист</p>
+                    <span class="price">💰 500</span>
+                    <button onclick="buyItem('player', 500)">Купить</button>
+                </div>
+                <div class="item-card">
+                    <h3>Тренировка</h3>
+                    <p>+5 к рейтингу игрока</p>
+                    <span class="price">💰 300</span>
+                    <button onclick="buyItem('training', 300)">Купить</button>
+                </div>
+                <div class="item-card">
+                    <h3>Форма команды</h3>
+                    <p>Новая раскраска</p>
+                    <span class="price">💰 1000</span>
+                    <button onclick="buyItem('kit', 1000)">Купить</button>
+                </div>
+                <div class="item-card">
+                    <h3>Стадион</h3>
+                    <p>Улучшение стадиона</p>
+                    <span class="price">💰 2000</span>
+                    <button onclick="buyItem('stadium', 2000)">Купить</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Настройки -->
+        <section id="settings" class="screen">
+            <div class="screen-header">
+                <button onclick="showScreen('main-menu')" class="back-btn">← Назад</button>
+                <h2>⚙️ Настройки</h2>
+            </div>
+            <div class="settings-options">
+                <label>
+                    Звук:
+                    <input type="range" id="sound-volume" min="0" max="100" value="70">
+                </label>
+                <label>
+                    Музыка:
+                    <input type="range" id="music-volume" min="0" max="100" value="50">
+                </label>
+                <label>
+                    Язык:
+                    <select>
+                        <option value="ru">Русский</option>
+                        <option value="en">English</option>
+                    </select>
+                </label>
+                <label>
+                    Качество графики:
+                    <select>
+                        <option value="low">Низкое</option>
+                        <option value="medium" selected>Среднее</option>
+                        <option value="high">Высокое</option>
+                    </select>
+                </label>
+                <button onclick="resetProgress()" class="danger-btn">🗑️ Сбросить прогресс</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
